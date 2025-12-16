@@ -1,0 +1,6 @@
+@Sarkaar_Apis_HostAddress = http://localhost:5046
+
+GET {{Sarkaar_Apis_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
