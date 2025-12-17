@@ -172,7 +172,6 @@ namespace Sarkaar_Apis.Controllers
 
 
         [HttpPost("submit-clue")]
-        [HttpPost("submit-clue")]
 public IActionResult SubmitClue([FromBody] ClueRequestDTO req)
 {
     if (!games.TryGetValue(req.GameId, out var game))
