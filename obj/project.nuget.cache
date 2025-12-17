@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "JbFlZ5qIbpU=",
+  "dgSpecHash": "O85QylQuVsI=",
   "success": true,
-  "projectFilePath": "C:\\Users\\tanisha1\\Desktop\\Sarkaar game\\Sarkaar_Backend\\Sarkaar_Apis\\Sarkaar_Apis.csproj",
+  "projectFilePath": "C:\\Users\\tanisha1\\Desktop\\Games Innova\\backend\\Sarkaar_Apis.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\tanisha1\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\tanisha1\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",

@@ -42,13 +42,20 @@ namespace Sarkaar_Apis.Controllers
             }));
         }
 
-        [HttpGet("submit-clue")]
+        [HttpGet("clues")]
         public IActionResult GetClues([FromQuery] Guid gameId)
         {
             if (!games.TryGetValue(gameId, out var game))
                 return NotFound();
-            return Ok(game.Players.Select(p => new { p.PlayerId, p.Name, p.Clue }));
+
+            return Ok(game.Players.Select(p => new
+            {
+                playerId = p.PlayerId,
+                name = p.Name,
+                clue = p.Clue
+            }));
         }
+
         // In-memory storage for demo purposes
         private static ConcurrentDictionary<Guid, ImposterGame> games = new();
 
@@ -68,15 +75,66 @@ namespace Sarkaar_Apis.Controllers
         [HttpPost("create")]
         public IActionResult CreateGame([FromBody] CreateGameDTO req)
         {
-            if (req.Words == null || req.Words.Length < 3)
+            if (req.PlayerNames == null || req.PlayerNames.Length < 3)
                 return BadRequest("At least 3 players required.");
 
+
+            // Expanded word list: [word, imposter hint]
             var wordSets = new[]
             {
-        new[] { "apple", "banana" },
-        new[] { "cat", "dog" },
-        new[] { "car", "bus" }
-    };
+                new[] { "apple", "tasty" },
+                new[] { "car", "wheel" },
+                new[] { "cat", "meow" },
+                new[] { "dog", "bark" },
+                new[] { "banana", "yellow" },
+                new[] { "train", "track" },
+                new[] { "book", "read" },
+                new[] { "phone", "call" },
+                new[] { "computer", "keyboard" },
+                new[] { "river", "water" },
+                new[] { "mountain", "peak" },
+                new[] { "pencil", "write" },
+                new[] { "shoe", "foot" },
+                new[] { "tree", "leaf" },
+                new[] { "cake", "sweet" },
+                new[] { "milk", "white" },
+                new[] { "sun", "hot" },
+                new[] { "moon", "night" },
+                new[] { "star", "shine" },
+                new[] { "fish", "swim" },
+                new[] { "plane", "fly" },
+                new[] { "clock", "time" },
+                new[] { "rain", "wet" },
+                new[] { "ice", "cold" },
+                new[] { "bread", "slice" },
+                new[] { "ring", "finger" },
+                new[] { "shirt", "button" },
+                new[] { "glass", "drink" },
+                new[] { "mouse", "click" },
+                new[] { "camera", "photo" },
+                new[] { "bike", "pedal" },
+                new[] { "bus", "stop" },
+                new[] { "egg", "breakfast" },
+                new[] { "chair", "sit" },
+                new[] { "table", "dine" },
+                new[] { "door", "open" },
+                new[] { "window", "glass" },
+                new[] { "pen", "ink" },
+                new[] { "hat", "head" },
+                new[] { "cake", "birthday" },
+                new[] { "leaf", "green" },
+                new[] { "road", "drive" },
+                new[] { "train", "station" },
+                new[] { "ship", "sail" },
+                new[] { "shoe", "lace" },
+                new[] { "cloud", "sky" },
+                new[] { "cheese", "pizza" },
+                new[] { "flower", "petal" },
+                new[] { "cake", "icing" },
+                new[] { "apple", "fruit" },
+                new[] { "car", "engine" },
+                new[] { "dog", "tail" }
+            };
 
             var rnd = new Random();
             var set = wordSets[rnd.Next(wordSets.Length)];
@@ -91,7 +149,7 @@ namespace Sarkaar_Apis.Controllers
                 VotePhaseComplete = false
             };
 
-            foreach (var name in req.Words)
+            foreach (var name in req.PlayerNames)
             {
                 game.Players.Add(new ImposterPlayer
                 {
@@ -104,9 +162,6 @@ namespace Sarkaar_Apis.Controllers
             games[game.GameId] = game;
             return Ok(new { game.GameId });
         }
-
-
-
 
         [HttpPost("join")]
         public IActionResult JoinGame([FromBody] JoinGameDTO req)
@@ -162,46 +217,53 @@ namespace Sarkaar_Apis.Controllers
             if (player == null)
                 return NotFound("Player not found");
 
+            string wordToShow;
+            if (player.IsImposter)
+            {
+                // Find the hint for the current word
+                var hint = game.ImposterWord;
+                wordToShow = hint;
+            }
+            else
+            {
+                wordToShow = game.CommonWord;
+            }
             return Ok(new
             {
-                word = player.IsImposter ? "" : game.CommonWord,
+                word = wordToShow,
                 isImposter = player.IsImposter
             });
         }
 
-
-
         [HttpPost("submit-clue")]
-        [HttpPost("submit-clue")]
-public IActionResult SubmitClue([FromBody] ClueRequestDTO req)
-{
-    if (!games.TryGetValue(req.GameId, out var game))
-        return NotFound();
+        public IActionResult SubmitClue([FromBody] ClueRequestDTO req)
+        {
+            if (!games.TryGetValue(req.GameId, out var game))
+                return NotFound("Game not found");
 
-    var player = game.Players.FirstOrDefault(p => p.PlayerId == req.PlayerId);
-    if (player == null)
-        return NotFound();
+            if (game.CluePhaseComplete)
+                return BadRequest("Clue phase already completed");
 
-    // Save clue
-    player.Clue = req.Clue;
+            var currentPlayer = game.Players[game.CurrentClueTurnIndex];
 
-    // Move turn forward
-    game.CurrentClueTurnIndex++;
+            if (currentPlayer.PlayerId != req.PlayerId)
+                return BadRequest("Not your turn");
 
-    // If all players submitted
-    if (game.CurrentClueTurnIndex >= game.Players.Count)
-    {
-        game.CluePhaseComplete = true;
-        game.CurrentVoteTurnIndex = 0; // prepare voting
-    }
+            currentPlayer.Clue = req.Clue;
 
-    return Ok(new
-    {
-        cluePhaseComplete = game.CluePhaseComplete
-    });
-}
+            game.CurrentClueTurnIndex++;
 
+            if (game.CurrentClueTurnIndex >= game.Players.Count)
+            {
+                game.CluePhaseComplete = true;
+                game.CurrentVoteTurnIndex = 0;
+            }
 
+            return Ok(new
+            {
+                cluePhaseComplete = game.CluePhaseComplete
+            });
+        }
 
         [HttpPost("vote")]
         public IActionResult Vote([FromBody] VoteRequestDTO req)
@@ -233,6 +295,30 @@ public IActionResult SubmitClue([FromBody] ClueRequestDTO req)
             }
 
             return Ok(new { finished = false });
+        }
+        [HttpGet("result")]
+        public IActionResult GetResult([FromQuery] Guid gameId)
+        {
+            if (!games.TryGetValue(gameId, out var game))
+                return NotFound();
+
+            if (!game.IsFinished)
+                return BadRequest("Game not finished yet");
+
+            var imposter = game.Players.FirstOrDefault(p => p.IsImposter);
+            var votedOut = game.Votes.Values
+                .GroupBy(x => x)
+                .OrderByDescending(g => g.Count())
+                .FirstOrDefault()?.Key;
+
+            return Ok(new
+            {
+                imposterId = imposter?.PlayerId,
+                imposterName = imposter?.Name,
+                votedOut = votedOut,
+                isImposterCaught = votedOut == game.ImposterId,
+                votes = game.Votes
+            });
         }
     }
 }

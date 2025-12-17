@@ -4916,11 +4916,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\tanisha1\\Desktop\\Sarkaar game\\Sarkaar_Backend\\Sarkaar_Apis\\Sarkaar_Apis.csproj",
+      "projectUniqueName": "C:\\Users\\tanisha1\\Desktop\\Games Innova\\backend\\Sarkaar_Apis.csproj",
       "projectName": "Sarkaar_Apis",
-      "projectPath": "C:\\Users\\tanisha1\\Desktop\\Sarkaar game\\Sarkaar_Backend\\Sarkaar_Apis\\Sarkaar_Apis.csproj",
+      "projectPath": "C:\\Users\\tanisha1\\Desktop\\Games Innova\\backend\\Sarkaar_Apis.csproj",
       "packagesPath": "C:\\Users\\tanisha1\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\tanisha1\\Desktop\\Sarkaar game\\Sarkaar_Backend\\Sarkaar_Apis\\obj\\",
+      "outputPath": "C:\\Users\\tanisha1\\Desktop\\Games Innova\\backend\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\tanisha1\\AppData\\Roaming\\NuGet\\NuGet.Config"
