@@ -236,10 +236,17 @@ namespace Sarkaar_Apis.Controllers
         }
 
         [HttpPost("submit-clue")]
+<<<<<<< HEAD
         public IActionResult SubmitClue([FromBody] ClueRequestDTO req)
         {
             if (!games.TryGetValue(req.GameId, out var game))
                 return NotFound("Game not found");
+=======
+public IActionResult SubmitClue([FromBody] ClueRequestDTO req)
+{
+    if (!games.TryGetValue(req.GameId, out var game))
+        return NotFound();
+>>>>>>> e311033a40fa5729d0a97b997c10f379fc5a88ea
 
             if (game.CluePhaseComplete)
                 return BadRequest("Clue phase already completed");
