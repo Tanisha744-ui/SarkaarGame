@@ -1,0 +1,43 @@
+# Ignore build results
+bin/
+obj/
+
+# Ignore user-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Ignore Rider project files
+.idea/
+*.sln.iml
+
+# Ignore Visual Studio Code settings
+.vscode/
+
+# Ignore build artifacts
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+*.vspscc
+*.vssscc
+
+# Ignore NuGet packages
+*.nupkg
+# Ignore test results
+TestResults/
+
+# Ignore other common files
+*.dbmdl
+*.bak
+*.backup
+*.mdf
+*.ldf
+*.sdf
+*.sqlite
+*.sql
+
+# Ignore publish output
+publish/

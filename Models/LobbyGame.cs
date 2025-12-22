@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
-namespace backend.Models
+ 
+namespace Sarkaar_Apis.Models
 {
     public class Player
     {
@@ -11,7 +11,7 @@ namespace backend.Models
         public string Id { get; set; }
         public string Name { get; set; }
     }
-
+ 
     class LobbyGame
     {
         public string LobbyId { get; set; }
@@ -20,5 +20,5 @@ namespace backend.Models
         public Dictionary<string, string> Votes { get; set; } = new();
         public bool CluePhaseEnded { get; set; }
     }
-
+ 
 }

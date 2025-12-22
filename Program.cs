@@ -98,7 +98,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 // Map SignalR hub endpoint
-app.MapHub<backend.LobbyHub>("/lobbyHub");
+// app.MapHub<backend.LobbyHub>("/lobbyHub");
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
