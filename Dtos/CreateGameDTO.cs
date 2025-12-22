@@ -7,6 +7,6 @@ namespace Sarkaar_Apis.Dtos
 {
     public class CreateGameDTO
     {
-        public string[] Words { get; set; }
+        public string[] PlayerNames { get; set; }
     }
 }

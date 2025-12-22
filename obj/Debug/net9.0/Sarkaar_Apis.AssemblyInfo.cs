@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Sarkaar_Apis")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e311033a40fa5729d0a97b997c10f379fc5a88ea")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+026aa6582b9b188494d45b25f8e43cb312116f00")]
 [assembly: System.Reflection.AssemblyProductAttribute("Sarkaar_Apis")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Sarkaar_Apis")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
