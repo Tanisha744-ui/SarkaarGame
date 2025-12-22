@@ -27,9 +27,12 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp",
-        builder => builder.WithOrigins("http://localhost:4200")
-                          .AllowAnyHeader()
-                          .AllowAnyMethod());
+        builder => builder
+            .WithOrigins("http://localhost:4200")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials() // <-- Add this line
+    );
 });
 
 builder.Services.AddDbContext<SarkaarDbContext>(options =>
@@ -75,6 +78,8 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+// Add SignalR services
+builder.Services.AddSignalR();
 var app = builder.Build();
 
 
@@ -92,6 +97,8 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+// Map SignalR hub endpoint
+app.MapHub<backend.LobbyHub>("/lobbyHub");
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"

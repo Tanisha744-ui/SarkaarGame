@@ -82,30 +82,46 @@ namespace Sarkaar_Apis.Controllers
             // Expanded word list: [word, imposter hint]
             var wordSets = new[]
             {
-                new[] { "apple", "tasty" },
-                new[] { "car", "wheel" },
-                new[] { "cat", "meow" },
-                new[] { "dog", "bark" },
-                new[] { "banana", "yellow" },
-                new[] { "train", "track" },
-                new[] { "book", "read" },
-                new[] { "phone", "call" },
-                new[] { "computer", "keyboard" },
-                new[] { "river", "water" },
-                new[] { "mountain", "peak" },
-                new[] { "pencil", "write" },
-                new[] { "shoe", "foot" },
-                new[] { "tree", "leaf" },
-                new[] { "cake", "sweet" },
-                new[] { "milk", "white" },
-                new[] { "sun", "hot" },
-                new[] { "moon", "night" },
-                new[] { "star", "shine" },
-                new[] { "fish", "swim" },
-                new[] { "plane", "fly" },
-                new[] { "clock", "time" },
-                new[] { "rain", "wet" },
-                new[] { "ice", "cold" },
+                new[] { "Airport", "Boarding" },
+                new[] { "Hospital", "Medicine" },
+                new[] { "School", "Homework" },
+                new[] { "Restaurant", "Menu" },
+                new[] { "Cinema", "Trailer" },
+                new[] { "Hotel", "Keycard" },
+                new[] { "Gym", "Weights" },
+                new[] { "Library", "Study" },
+                new[] { "Office", "Meeting" },
+                new[] { "Station", "Platform" },
+                new[] { "Pizza", "Cheese" },
+                new[] { "Burger", "Sauce" },
+                new[] { "Coffee", "Caffeine" },
+                new[] { "Ice Cream", "Cone" },
+                new[] { "Sandwich", "Toast" },
+                new[] { "Cake", "Slice" },
+                new[] { "Pasta", "Boil" },
+                new[] { "Soup", "Steam" },
+                new[] { "Chocolate", "Bitter" },
+                new[] { "Bread", "Fresh" },
+                new[] { "Phone", "Battery" },
+                new[] { "Laptop", "Charger" },
+                new[] { "Camera", "Zoom" },
+                new[] { "Car", "Fuel" },
+                new[] { "Watch", "Alarm" },
+                new[] { "Shoes", "Comfort" },
+                new[] { "Bag", "Books" },
+                new[] { "Pen", "Signature" },
+                new[] { "Bottle", "Water" },
+                new[] { "Headphones", "Volume" },
+                new[] { "Rain", "Umbrella" },
+                new[] { "Sun", "Heat" },
+                new[] { "Snow", "Cold" },
+                new[] { "River", "Flow" },
+                new[] { "Forest", "Trees" },
+                new[] { "Beach", "Sand" },
+                new[] { "Fire", "Smoke" },
+                new[] { "Wind", "Breeze" },
+                new[] { "Night", "Dark" },
+                new[] { "Morning", "Fresh" },
                 new[] { "bread", "slice" },
                 new[] { "ring", "finger" },
                 new[] { "shirt", "button" },
@@ -236,17 +252,14 @@ namespace Sarkaar_Apis.Controllers
         }
 
         [HttpPost("submit-clue")]
-<<<<<<< HEAD
+
+
+
         public IActionResult SubmitClue([FromBody] ClueRequestDTO req)
         {
             if (!games.TryGetValue(req.GameId, out var game))
-                return NotFound("Game not found");
-=======
-public IActionResult SubmitClue([FromBody] ClueRequestDTO req)
-{
-    if (!games.TryGetValue(req.GameId, out var game))
-        return NotFound();
->>>>>>> e311033a40fa5729d0a97b997c10f379fc5a88ea
+                return NotFound();
+
 
             if (game.CluePhaseComplete)
                 return BadRequest("Clue phase already completed");
