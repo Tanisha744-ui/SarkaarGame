@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 var builder = WebApplication.CreateBuilder(args);
 
 // JWT Authentication configuration
@@ -98,7 +99,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 // Map SignalR hub endpoint
-// app.MapHub<backend.LobbyHub>("/lobbyHub");
+app.MapHub<backend.Controllers.LobbyHub>("/lobbyHub");
 var summaries = new[]
 {
     "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"

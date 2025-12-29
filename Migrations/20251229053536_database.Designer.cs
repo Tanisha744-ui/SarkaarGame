@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Sarkaar_Apis.Migrations
 {
     [DbContext(typeof(SarkaarDbContext))]
-    partial class SarkaarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251229053536_database")]
+    partial class database
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -57,7 +60,7 @@ namespace Sarkaar_Apis.Migrations
 
             modelBuilder.Entity("Sarkaar_Apis.Models.ImposterGame", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<Guid>("GameId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
@@ -87,14 +90,10 @@ namespace Sarkaar_Apis.Migrations
                     b.Property<bool>("IsStarted")
                         .HasColumnType("bit");
 
-                    b.Property<string>("LobbyCode")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<bool>("VotePhaseComplete")
                         .HasColumnType("bit");
 
-                    b.HasKey("Id");
+                    b.HasKey("GameId");
 
                     b.ToTable("ImposterGames");
                 });

@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Sarkaar_Apis.Models;
+
 public class SarkaarDbContext : DbContext
 {
     public SarkaarDbContext(DbContextOptions<SarkaarDbContext> options) : base(options)
@@ -8,6 +10,8 @@ public class SarkaarDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<Role> Roles { get; set; }
     public DbSet<Team> Teams { get; set; }
+    public DbSet<ImposterGame> ImposterGames { get; set; }
+    public DbSet<ImposterPlayer> ImposterPlayers { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,5 +27,12 @@ public class SarkaarDbContext : DbContext
             .WithMany()
             .HasForeignKey(t => t.TeamLeadId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // ImposterGame/ImposterPlayer relationship
+        modelBuilder.Entity<ImposterPlayer>()
+            .HasOne(p => p.Game)
+            .WithMany(g => g.Players)
+            .HasForeignKey(p => p.GameId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

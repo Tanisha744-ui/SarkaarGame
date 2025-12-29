@@ -11,6 +11,14 @@ namespace Sarkaar_Apis.Controllers
     [Route("api/[controller]")]
     public class ImposterGameController : ControllerBase
     {
+        // Store games in a thread-safe dictionary
+        private static ConcurrentDictionary<Guid, ImposterGame> games = new ConcurrentDictionary<Guid, ImposterGame>();
+        private readonly SarkaarDbContext _db;
+        public ImposterGameController(SarkaarDbContext db)
+        {
+            _db = db;
+        }
+
         [HttpGet("turn-info")]
         public IActionResult GetTurnInfo(Guid gameId)
         {
@@ -56,9 +64,6 @@ namespace Sarkaar_Apis.Controllers
             }));
         }
 
-        // In-memory storage for demo purposes
-        private static ConcurrentDictionary<Guid, ImposterGame> games = new();
-
         [HttpPost("register-player")]
         public IActionResult RegisterPlayer([FromBody] RegisterPlayerDTO req)
         {
@@ -77,7 +82,6 @@ namespace Sarkaar_Apis.Controllers
         {
             if (req.PlayerNames == null || req.PlayerNames.Length < 3)
                 return BadRequest("At least 3 players required.");
-
 
             // Expanded word list: [word, imposter hint]
             var wordSets = new[]
@@ -155,28 +159,18 @@ namespace Sarkaar_Apis.Controllers
             var rnd = new Random();
             var set = wordSets[rnd.Next(wordSets.Length)];
 
-            var game = new ImposterGame
+            // Make sure to use the correct namespace or define GameEntity if it doesn't exist.
+            var dbGame = new ImposterGame
             {
                 CommonWord = set[0],
                 ImposterWord = set[1],
-                CurrentClueTurnIndex = 0,
-                CurrentVoteTurnIndex = 0,
-                CluePhaseComplete = false,
-                VotePhaseComplete = false
+                Players = req.PlayerNames.Select(name => new ImposterPlayer { Name = name }).ToList(),
+                // Set other properties...
             };
+            _db.ImposterGames.Add(dbGame);
+            _db.SaveChanges();
 
-            foreach (var name in req.PlayerNames)
-            {
-                game.Players.Add(new ImposterPlayer
-                {
-                    Name = name,
-                    IsImposter = false,
-                    Clue = null
-                });
-            }
-
-            games[game.GameId] = game;
-            return Ok(new { game.GameId });
+            return Ok(new { dbGame.Id });
         }
 
         [HttpPost("join")]
@@ -252,9 +246,6 @@ namespace Sarkaar_Apis.Controllers
         }
 
         [HttpPost("submit-clue")]
-
-
-
         public IActionResult SubmitClue([FromBody] ClueRequestDTO req)
         {
             if (!games.TryGetValue(req.GameId, out var game))
