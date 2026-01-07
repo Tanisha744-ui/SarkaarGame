@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
-using Sarkaar_Apis.Models;
+using Microsoft.EntityFrameworkCore;
 using Sarkaar_Apis.Dtos;
+using Sarkaar_Apis.Models;
 using System;
-using System.Collections.Concurrent;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Sarkaar_Apis.Controllers
 {
@@ -11,8 +12,6 @@ namespace Sarkaar_Apis.Controllers
     [Route("api/[controller]")]
     public class ImposterGameController : ControllerBase
     {
-        // Store games in a thread-safe dictionary
-        private static ConcurrentDictionary<Guid, ImposterGame> games = new ConcurrentDictionary<Guid, ImposterGame>();
         private readonly SarkaarDbContext _db;
         public ImposterGameController(SarkaarDbContext db)
         {
@@ -20,316 +19,317 @@ namespace Sarkaar_Apis.Controllers
         }
 
         [HttpGet("turn-info")]
-        public IActionResult GetTurnInfo(Guid gameId)
+        public async Task<IActionResult> GetTurnInfo(Guid gameId)
         {
-            if (!games.TryGetValue(gameId, out var game))
-                return NotFound();
+            var game = await _db.ImposterGames.FindAsync(gameId);
+            if (game == null) return NotFound();
 
             return Ok(new
             {
-                clueTurnIndex = game.CurrentClueTurnIndex,
-                voteTurnIndex = game.CurrentVoteTurnIndex,
-                cluePhaseComplete = game.CluePhaseComplete,
-                votePhaseComplete = game.VotePhaseComplete
+                game.CurrentClueTurnIndex,
+                game.CurrentVoteTurnIndex,
+                game.CluePhaseComplete,
+                game.VotePhaseComplete
             });
         }
 
 
         [HttpGet("players")]
-        public IActionResult GetPlayers([FromQuery] Guid gameId)
+        public async Task<IActionResult> GetPlayers(Guid gameId)
         {
-            if (!games.TryGetValue(gameId, out var game))
-                return NotFound();
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.Id == gameId);
+
+            if (game == null) return NotFound();
+
+            var votedPlayerIds = await _db.ImposterVotes
+                .Where(v => v.GameId == gameId)
+                .Select(v => v.VoterId)
+                .ToListAsync();
+
             return Ok(game.Players.Select(p => new
             {
-                playerId = p.PlayerId,
-                name = p.Name,
-                clue = p.Clue,
-                hasVoted = game.Votes.ContainsKey(p.PlayerId),
-                voteFor = game.Votes.TryGetValue(p.PlayerId, out var v) ? (Guid?)v : null
+                p.PlayerId,
+                p.Name,
+                p.Clue,
+                hasVoted = votedPlayerIds.Contains(p.PlayerId)
             }));
         }
 
         [HttpGet("clues")]
-        public IActionResult GetClues([FromQuery] Guid gameId)
+        public async Task<IActionResult> GetClues(Guid gameId)
         {
-            if (!games.TryGetValue(gameId, out var game))
-                return NotFound();
+            var players = await _db.ImposterPlayers
+                .Where(p => p.GameId.Equals(gameId))
+                .Select(p => new
+                {
+                    p.PlayerId,
+                    p.Name,
+                    text = p.Clue ?? ""
+                })
+                .ToListAsync();
 
-            return Ok(game.Players.Select(p => new
-            {
-                playerId = p.PlayerId,
-                name = p.Name,
-                clue = p.Clue
-            }));
+            return Ok(players);
         }
 
         [HttpPost("register-player")]
-        public IActionResult RegisterPlayer([FromBody] RegisterPlayerDTO req)
+        public async Task<IActionResult> RegisterPlayer(RegisterPlayerDTO req)
         {
-            if (!games.TryGetValue(req.GameId, out var game))
+            var game = await _db.ImposterGames.FindAsync(req.GameId);
+            if (game == null)
                 return NotFound("Game not found.");
 
-            if (game.Players.Any(p => p.Name == req.Name))
-                return BadRequest("Player name already exists in this game.");
+            var exists = await _db.ImposterPlayers
+                .AnyAsync(p => p.GameId.Equals(req.GameId) && p.Name == req.Name);
 
-            var player = new ImposterPlayer { Name = req.Name };
-            game.Players.Add(player);
+            if (exists)
+                return BadRequest("Player name already exists.");
+
+            var player = new ImposterPlayer
+            {
+                Name = req.Name,
+                GameId = req.GameId // Make sure ImposterPlayer.GameId is of type Guid in your model
+            };
+
+            _db.ImposterPlayers.Add(player);
+            await _db.SaveChangesAsync();
+
             return Ok(new { player.PlayerId });
-        }
-        [HttpPost("create")]
-        public IActionResult CreateGame([FromBody] CreateGameDTO req)
-        {
-            if (req.PlayerNames == null || req.PlayerNames.Length < 3)
-                return BadRequest("At least 3 players required.");
-
-            // Expanded word list: [word, imposter hint]
-            var wordSets = new[]
-            {
-                new[] { "Airport", "Boarding" },
-                new[] { "Hospital", "Medicine" },
-                new[] { "School", "Homework" },
-                new[] { "Restaurant", "Menu" },
-                new[] { "Cinema", "Trailer" },
-                new[] { "Hotel", "Keycard" },
-                new[] { "Gym", "Weights" },
-                new[] { "Library", "Study" },
-                new[] { "Office", "Meeting" },
-                new[] { "Station", "Platform" },
-                new[] { "Pizza", "Cheese" },
-                new[] { "Burger", "Sauce" },
-                new[] { "Coffee", "Caffeine" },
-                new[] { "Ice Cream", "Cone" },
-                new[] { "Sandwich", "Toast" },
-                new[] { "Cake", "Slice" },
-                new[] { "Pasta", "Boil" },
-                new[] { "Soup", "Steam" },
-                new[] { "Chocolate", "Bitter" },
-                new[] { "Bread", "Fresh" },
-                new[] { "Phone", "Battery" },
-                new[] { "Laptop", "Charger" },
-                new[] { "Camera", "Zoom" },
-                new[] { "Car", "Fuel" },
-                new[] { "Watch", "Alarm" },
-                new[] { "Shoes", "Comfort" },
-                new[] { "Bag", "Books" },
-                new[] { "Pen", "Signature" },
-                new[] { "Bottle", "Water" },
-                new[] { "Headphones", "Volume" },
-                new[] { "Rain", "Umbrella" },
-                new[] { "Sun", "Heat" },
-                new[] { "Snow", "Cold" },
-                new[] { "River", "Flow" },
-                new[] { "Forest", "Trees" },
-                new[] { "Beach", "Sand" },
-                new[] { "Fire", "Smoke" },
-                new[] { "Wind", "Breeze" },
-                new[] { "Night", "Dark" },
-                new[] { "Morning", "Fresh" },
-                new[] { "bread", "slice" },
-                new[] { "ring", "finger" },
-                new[] { "shirt", "button" },
-                new[] { "glass", "drink" },
-                new[] { "mouse", "click" },
-                new[] { "camera", "photo" },
-                new[] { "bike", "pedal" },
-                new[] { "bus", "stop" },
-                new[] { "egg", "breakfast" },
-                new[] { "chair", "sit" },
-                new[] { "table", "dine" },
-                new[] { "door", "open" },
-                new[] { "window", "glass" },
-                new[] { "pen", "ink" },
-                new[] { "hat", "head" },
-                new[] { "cake", "birthday" },
-                new[] { "leaf", "green" },
-                new[] { "road", "drive" },
-                new[] { "train", "station" },
-                new[] { "ship", "sail" },
-                new[] { "shoe", "lace" },
-                new[] { "cloud", "sky" },
-                new[] { "cheese", "pizza" },
-                new[] { "flower", "petal" },
-                new[] { "cake", "icing" },
-                new[] { "apple", "fruit" },
-                new[] { "car", "engine" },
-                new[] { "dog", "tail" }
-            };
-
-            var rnd = new Random();
-            var set = wordSets[rnd.Next(wordSets.Length)];
-
-            // Make sure to use the correct namespace or define GameEntity if it doesn't exist.
-            var dbGame = new ImposterGame
-            {
-                CommonWord = set[0],
-                ImposterWord = set[1],
-                Players = req.PlayerNames.Select(name => new ImposterPlayer { Name = name }).ToList(),
-                // Set other properties...
-            };
-            _db.ImposterGames.Add(dbGame);
-            _db.SaveChanges();
-
-            return Ok(new { dbGame.Id });
         }
 
         [HttpPost("join")]
-        public IActionResult JoinGame([FromBody] JoinGameDTO req)
+        public async Task<IActionResult> JoinGame(JoinGameDTO req)
         {
-            Console.WriteLine($"JoinGame called with GameId: {req.GameId}");
-            if (!games.TryGetValue(req.GameId, out var game))
+            var game = await _db.ImposterGames.FindAsync(req.GameId);
+            if (game == null)
                 return NotFound("Game not found.");
 
-            var player = new ImposterPlayer { Name = req.Name };
-            game.Players.Add(player);
+            var player = new ImposterPlayer
+            {
+                Name = req.Name,
+                GameId = req.GameId
+            };
+
+            _db.ImposterPlayers.Add(player);
+            await _db.SaveChangesAsync();
+
             return Ok(new { player.PlayerId });
         }
 
+
         [HttpPost("start")]
-        public IActionResult StartGame([FromQuery] Guid gameId)
+        public async Task<IActionResult> StartGame([FromQuery] Guid gameId)
         {
-            if (!games.TryGetValue(gameId, out var game))
+            // 1. Load game with players
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.Id == gameId);
+
+            if (game == null)
                 return NotFound("Game not found.");
 
             if (game.Players.Count < 3)
                 return BadRequest("At least 3 players required.");
 
-            // RESET STATE (VERY IMPORTANT)
+            // 2. RESET PLAYER STATE
             foreach (var p in game.Players)
             {
-                p.IsImposter = false;
+                p.IsImposter = false; // <--- This ensures only one imposter
                 p.Clue = null;
             }
 
+            // 3. RESET GAME STATE
             game.CurrentClueTurnIndex = 0;
             game.CurrentVoteTurnIndex = 0;
             game.CluePhaseComplete = false;
             game.VotePhaseComplete = false;
-            game.Votes.Clear();
-
-            var rnd = new Random();
-            int imposterIndex = rnd.Next(game.Players.Count);
-
-            game.Players[imposterIndex].IsImposter = true;
-            game.ImposterId = game.Players[imposterIndex].PlayerId;
             game.IsStarted = true;
 
-            return Ok();
+            // 4. CLEAR OLD VOTES (DB, NOT MEMORY)
+            var oldVotes = _db.ImposterVotes.Where(v => v.GameId == gameId);
+            _db.ImposterVotes.RemoveRange(oldVotes);
+
+            // 5. PICK RANDOM IMPOSTER
+            var rnd = new Random();
+            var imposterList = game.Players.ToList();
+            var imposter = imposterList[rnd.Next(imposterList.Count)];
+
+            imposter.IsImposter = true;
+            game.ImposterId = imposter.PlayerId;
+
+            // 6. SAVE EVERYTHING
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                message = "Game started successfully",
+                imposterAssigned = true
+            });
         }
 
         [HttpGet("word")]
-        public IActionResult GetWord(Guid gameId, Guid playerId)
+        public async Task<IActionResult> GetWord(Guid gameId, Guid playerId)
         {
-            if (!games.TryGetValue(gameId, out var game))
-                return NotFound("Game not found");
+            var player = await _db.ImposterPlayers
+                .FirstOrDefaultAsync(p => p.PlayerId == playerId && p.GameId == gameId);
 
-            var player = game.Players.FirstOrDefault(p => p.PlayerId == playerId);
-            if (player == null)
-                return NotFound("Player not found");
+            if (player == null) return NotFound();
 
-            string wordToShow;
-            if (player.IsImposter)
-            {
-                // Find the hint for the current word
-                var hint = game.ImposterWord;
-                wordToShow = hint;
-            }
-            else
-            {
-                wordToShow = game.CommonWord;
-            }
+            var game = await _db.ImposterGames
+                .FirstOrDefaultAsync(g => g.Id == gameId);
+
+            if (game == null) return NotFound();
+
+            // ADD THIS CHECK
+            if (!game.IsStarted)
+                return BadRequest(new { message = "Game has not started yet." });
+
             return Ok(new
             {
-                word = wordToShow,
-                isImposter = player.IsImposter
+                word = player.IsImposter ? game.ImposterWord : game.CommonWord,
+                player.IsImposter
             });
         }
 
         [HttpPost("submit-clue")]
-        public IActionResult SubmitClue([FromBody] ClueRequestDTO req)
+        public async Task<IActionResult> SubmitClue(ClueRequestDTO req)
         {
-            if (!games.TryGetValue(req.GameId, out var game))
-                return NotFound();
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.Id == req.GameId);
 
+            if (game == null) return NotFound();
 
-            if (game.CluePhaseComplete)
-                return BadRequest("Clue phase already completed");
+            if (game.CurrentClueTurnIndex >= game.Players.Count)
+                return BadRequest("Clue phase already completed.");
 
-            var currentPlayer = game.Players[game.CurrentClueTurnIndex];
+            var player = game.Players
+                .OrderBy(p => p.PlayerId)
+                .ElementAt(game.CurrentClueTurnIndex);
 
-            if (currentPlayer.PlayerId != req.PlayerId)
+            if (player.PlayerId != req.PlayerId)
                 return BadRequest("Not your turn");
 
-            currentPlayer.Clue = req.Clue;
-
+            player.Clue = req.Clue;
             game.CurrentClueTurnIndex++;
 
             if (game.CurrentClueTurnIndex >= game.Players.Count)
-            {
                 game.CluePhaseComplete = true;
-                game.CurrentVoteTurnIndex = 0;
-            }
 
-            return Ok(new
-            {
-                cluePhaseComplete = game.CluePhaseComplete
-            });
+            await _db.SaveChangesAsync();
+            return Ok();
         }
 
         [HttpPost("vote")]
-        public IActionResult Vote([FromBody] VoteRequestDTO req)
+        public async Task<IActionResult> Vote(VoteRequestDTO req)
         {
-            if (!games.TryGetValue(req.GameId, out var game))
-                return NotFound();
+            var vote = await _db.ImposterVotes
+                .FirstOrDefaultAsync(v => v.GameId == req.GameId && v.VoterId == req.VoterId);
 
-            game.Votes[req.VoterId] = req.SuspectId;
-            // Advance vote turn
-            if (game.CurrentVoteTurnIndex < game.Players.Count - 1)
+            if (vote == null)
             {
-                game.CurrentVoteTurnIndex++;
+                _db.ImposterVotes.Add(new ImposterVote
+                {
+                    GameId = req.GameId,
+                    VoterId = req.VoterId,
+                    SuspectId = req.SuspectId
+                });
             }
             else
             {
-                game.VotePhaseComplete = true;
-            }
-            // Check if all players have voted
-            if (game.Votes.Count == game.Players.Count)
-            {
-                var votedOut = game.Votes.Values
-                    .GroupBy(x => x)
-                    .OrderByDescending(g => g.Count())
-                    .First().Key;
-
-                game.IsFinished = true;
-                var isImposterCaught = votedOut == game.ImposterId;
-                return Ok(new { finished = true, imposterCaught = isImposterCaught });
+                vote.SuspectId = req.SuspectId;
             }
 
-            return Ok(new { finished = false });
+            await _db.SaveChangesAsync();
+
+            var totalVotes = await _db.ImposterVotes.CountAsync(v => v.GameId == req.GameId);
+            var playerCount = await _db.ImposterPlayers.CountAsync(p => p.GameId.Equals(req.GameId));
+
+            if (totalVotes < playerCount)
+                return Ok(new { finished = false });
+
+            var votedOut = await _db.ImposterVotes
+                .Where(v => v.GameId == req.GameId)
+                .GroupBy(v => v.SuspectId)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key)
+                .FirstAsync();
+
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.Id == req.GameId);
+
+            game.IsFinished = true;
+            game.FinishedAt = DateTime.UtcNow;
+
+            // --- ADD THIS BLOCK ---
+            var accusedPlayer = game.Players.FirstOrDefault(p => p.PlayerId == votedOut);
+            var imposterPlayer = game.Players.FirstOrDefault(p => p.IsImposter);
+
+            bool imposterCaught = (imposterPlayer != null && accusedPlayer != null && imposterPlayer.PlayerId == accusedPlayer.PlayerId);
+
+            game.Result = $"{imposterCaught.ToString().ToLower()}|{accusedPlayer?.Name ?? ""}|{imposterPlayer?.Name ?? ""}";
+            // --- END BLOCK ---
+
+            await _db.SaveChangesAsync();
+            return Ok(new { finished = true, votedOut });
         }
+
+
         [HttpGet("result")]
-        public IActionResult GetResult([FromQuery] Guid gameId)
+        public async Task<IActionResult> GetResult(Guid gameId)
         {
-            if (!games.TryGetValue(gameId, out var game))
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.Id == gameId);
+
+            if (game == null || !game.IsFinished)
+                return BadRequest();
+
+            bool imposterCaught = false;
+            string accused = "";
+            string imposter = "";
+
+            if (!string.IsNullOrEmpty(game.Result))
+            {
+                var parts = game.Result.Split('|');
+                if (parts.Length == 3)
+                {
+                    imposterCaught = parts[0] == "true";
+                    accused = parts[1];
+                    imposter = parts[2];
+                }
+            }
+
+            var result = new {
+                imposterCaught,
+                accused,
+                imposter
+            };
+
+            return Ok(result);
+        }
+
+        [HttpPost("cleanup")]
+        public async Task<IActionResult> Cleanup([FromBody] string lobbyCode)
+        {
+            var game = await _db.ImposterGames
+                .FirstOrDefaultAsync(g => g.LobbyCode == lobbyCode);
+
+            if (game == null)
                 return NotFound();
 
-            if (!game.IsFinished)
-                return BadRequest("Game not finished yet");
+            var gameId = game.Id;
 
-            var imposter = game.Players.FirstOrDefault(p => p.IsImposter);
-            var votedOut = game.Votes.Values
-                .GroupBy(x => x)
-                .OrderByDescending(g => g.Count())
-                .FirstOrDefault()?.Key;
+            // Remove all related data
+            await _db.Database.ExecuteSqlRawAsync("DELETE FROM ImposterRoundDecisions WHERE GameId = {0}", gameId);
+            await _db.Database.ExecuteSqlRawAsync("DELETE FROM ImposterVotes WHERE GameId = {0}", gameId);
+            await _db.Database.ExecuteSqlRawAsync("DELETE FROM ImposterClues WHERE GameId = {0}", gameId);
+            await _db.Database.ExecuteSqlRawAsync("DELETE FROM ImposterPlayers WHERE GameId = {0}", gameId);
+            await _db.Database.ExecuteSqlRawAsync("DELETE FROM ImposterGames WHERE Id = {0}", gameId);
 
-            return Ok(new
-            {
-                imposterId = imposter?.PlayerId,
-                imposterName = imposter?.Name,
-                votedOut = votedOut,
-                isImposterCaught = votedOut == game.ImposterId,
-                votes = game.Votes
-            });
+            return Ok();
         }
     }
 }

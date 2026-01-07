@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using Sarkaar_Apis.Models;
 using Microsoft.EntityFrameworkCore;
+using Sarkaar_Apis.Models;
+using Microsoft.AspNetCore.Mvc;
 
 
 namespace backend.Controllers
@@ -14,95 +16,153 @@ namespace backend.Controllers
     {
         private readonly SarkaarDbContext _db;
         // Store lobbies in-memory for now (replace with DB for production)
-        private static Dictionary<string, Lobby> lobbies = new();
-        // Map player name to connectionId
-        private static Dictionary<string, string> playerConnections = new();
-        private static Dictionary<string, Dictionary<string, string>> lobbyClues = new();
-        private static Dictionary<string, Dictionary<string, string>> proceedVotes = new();
-        private static Dictionary<string, Dictionary<string, string>> lobbyVotes = new();
+        // private static Dictionary<string, Lobby> lobbies = new();
+        private static Dictionary<string, Guid> Connections = new();
+
+        private static Dictionary<string, int> LobbyMaxPlayers = new(); // lobbyCode -> maxPlayers
+
+        // private static Dictionary<string, Dictionary<string, string>> lobbyClues = new();
+        // private static Dictionary<string, Dictionary<string, string>> proceedVotes = new();
+        // private static Dictionary<string, Dictionary<string, string>> lobbyVotes = new();
 
         public LobbyHub(SarkaarDbContext db)
         {
             _db = db;
         }
-
-        public class Lobby
-        {
-            public string Code { get; set; }
-            public string Admin { get; set; }
-            public int PlayerCount { get; set; }
-            public List<string> Players { get; set; }
-            public string Imposter { get; set; }
-            public string Word { get; set; } // Added property
-            public Guid GameId { get; set; } // Add GameId property
-        }
-
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            // Remove player from connection map on disconnect
-            var player = playerConnections.FirstOrDefault(x => x.Value == Context.ConnectionId).Key;
-            if (player != null)
-                playerConnections.Remove(player);
+            if (Connections.ContainsKey(Context.ConnectionId))
+                Connections.Remove(Context.ConnectionId);
 
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task CreateLobby(string adminName, int playerCount)
+        public async Task CreateLobby(string playerName, int maxPlayers)
         {
-            var code = GenerateLobbyCode();
-            var lobby = new Lobby
+            try
             {
-                Code = code,
-                Admin = adminName,
-                PlayerCount = playerCount,
-                Players = new List<string> { adminName },
-                GameId = Guid.NewGuid() // Assign a unique GameId for the lobby
-            };
-            lobbies[code] = lobby;
-            playerConnections[adminName] = Context.ConnectionId;
-            await Groups.AddToGroupAsync(Context.ConnectionId, code);
-            await Clients.Caller.SendAsync("LobbyCreated", code);
+                // Generate a unique lobby code (e.g., 6 uppercase letters)
+                var code = Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper();
+
+                // Create game in DB
+                var game = new ImposterGame
+                {
+                    LobbyCode = code,
+                    CreatedAt = DateTime.UtcNow,
+                    IsStarted = false,
+                    IsFinished = false,
+                    CommonWord = "",
+                    ImposterWord = "",
+                    Step = "",
+                    Result = ""
+                };
+                _db.ImposterGames.Add(game);
+                await _db.SaveChangesAsync();
+
+                // Add host as first player
+                var player = new ImposterPlayer
+                {
+                    Name = playerName,
+                    GameId = game.Id
+                };
+                _db.ImposterPlayers.Add(player);
+                await _db.SaveChangesAsync();
+
+                // Track max players for this lobby
+                LobbyMaxPlayers[code] = maxPlayers;
+
+                Connections[Context.ConnectionId] = player.PlayerId;
+
+                await Groups.AddToGroupAsync(Context.ConnectionId, code);
+
+                await Clients.Caller.SendAsync("LobbyCreated", code);
+                await Clients.Group(code).SendAsync("PlayerJoined", playerName);
+
+                // If only one player, don't start yet
+            }
+            catch (Exception ex)
+            {
+                await Clients.Caller.SendAsync("LobbyError", ex.Message);
+                throw; // This will still show in the console, but now you'llget the real error message
+            }
         }
 
-        public async Task JoinLobby(string code, string name)
-        {
-            if (lobbies.TryGetValue(code, out var lobby) && lobby.Players.Count < lobby.PlayerCount)
-            {
-                lobby.Players.Add(name);
-                playerConnections[name] = Context.ConnectionId;
-                await Groups.AddToGroupAsync(Context.ConnectionId, code);
-                await Clients.Group(code).SendAsync("PlayerJoined", name, lobby.Players.Count, lobby.PlayerCount);
-                if (lobby.Players.Count == lobby.PlayerCount)
-                {
-                    await Clients.Group(code).SendAsync("AllPlayersJoined", lobby.Players);
-                }
 
-                // Find or create the game entity for this lobby
-                var game = _db.ImposterGames.FirstOrDefault(g => g.LobbyCode == code);
+        public async Task JoinLobby(string lobbyCode, string playerName)
+        {
+            try
+            {
+                var game = await _db.ImposterGames
+                    .Include(g => g.Players)
+                    .FirstOrDefaultAsync(g => g.LobbyCode == lobbyCode && !g.IsFinished);
+
                 if (game == null)
                 {
-                    game = new ImposterGame
-                    {
-                        LobbyCode = code,
-                        // Set other properties as needed
-                    };
-                    _db.ImposterGames.Add(game);
-                    await _db.SaveChangesAsync();
+                    await Clients.Caller.SendAsync("LobbyError", "Lobby not found.");
+                    return;
                 }
 
-                // Save player to database with correct GameId
-                var playerEntity = new ImposterPlayer
+                if (game.Players == null)
                 {
-                    Name = name,
-                    GameId = game.Id, // Set the GameId
-                    // Set other properties as needed
+                    await Clients.Caller.SendAsync("LobbyError", "Lobby has no players.");
+                    return;
+                }
+
+                if (game.Players.Any(p => (p.Name ?? "") == (playerName ?? "")))
+                {
+                    await Clients.Caller.SendAsync("LobbyError", "Name already taken.");
+                    return;
+                }
+
+                var player = new ImposterPlayer
+                {
+                    Name = playerName ?? "",
+                    Clue = "",
+                    GameId = game.Id
                 };
-                _db.ImposterPlayers.Add(playerEntity);
+
+                _db.ImposterPlayers.Add(player);
                 await _db.SaveChangesAsync();
+
+                Connections[Context.ConnectionId] = player.PlayerId;
+                await Groups.AddToGroupAsync(Context.ConnectionId, lobbyCode);
+
+                // Reload game to get updated players
+                var updatedGame = await _db.ImposterGames
+                    .Include(g => g.Players)
+                    .FirstOrDefaultAsync(g => g.LobbyCode == lobbyCode && !g.IsFinished);
+
+                if (updatedGame == null)
+                {
+                    await Clients.Caller.SendAsync("LobbyError", "Lobby not found after join.");
+                    return;
+                }
+
+                if (updatedGame.Players == null)
+                {
+                    await Clients.Caller.SendAsync("LobbyError", "Lobby players missing after join.");
+                    return;
+                }
+
+                // Send only player names as string[]
+                var allPlayers = updatedGame.Players.Select(p => p.Name ?? "").ToList();
+                await Clients.Group(lobbyCode).SendAsync("PlayerJoined", playerName ?? "");
+
+                if (LobbyMaxPlayers.TryGetValue(lobbyCode, out var maxPlayers) && allPlayers.Count >= maxPlayers)
+                {
+                    updatedGame.IsStarted = true;
+                    await _db.SaveChangesAsync();
+
+                    await Clients.Group(lobbyCode).SendAsync("AllPlayersJoined", allPlayers);
+
+                    await AssignWords(lobbyCode);
+                }
+                // ADD THIS: update viewers after player joins
+                await SendViewerUpdate(lobbyCode);
             }
-            else
+            catch (Exception ex)
             {
-                await Clients.Caller.SendAsync("LobbyJoinFailed", "Lobby full or not found");
+                await Clients.Caller.SendAsync("LobbyError", ex.Message);
             }
         }
 
@@ -114,11 +174,22 @@ namespace backend.Controllers
 
         public async Task AssignWords(string code)
         {
-            var lobby = lobbies[code];
-            var random = new Random();
-            var imposterIndex = random.Next(lobby.Players.Count);
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.LobbyCode == code);
 
-            lobby.Imposter = lobby.Players[imposterIndex];
+            if (game == null) return;
+
+            var rnd = new Random();
+            var playersList = game.Players.ToList();
+
+            // 🔴 Set all to NOT imposter first
+            foreach (var p in playersList)
+                p.IsImposter = false;
+
+            var imposter = playersList[rnd.Next(playersList.Count)];
+            game.ImposterId = imposter.PlayerId;
+            imposter.IsImposter = true;
 
             var wordSets = new[]
             {
@@ -191,28 +262,32 @@ namespace backend.Controllers
                 new[] { "car", "engine" },
                 new[] { "dog", "tail" }
             };
-            var words = wordSets[random.Next(wordSets.Length)];
-            lobby.Word = words[0]; // Store the main word in the lobby
+            var words = wordSets[rnd.Next(wordSets.Length)];
 
-            for (int i = 0; i < lobby.Players.Count; i++)
+            game.CommonWord = words[0];
+            game.ImposterWord = words[1];
+
+            // Save changes so IsImposter and words are persisted
+            await _db.SaveChangesAsync();
+
+            // 🔴 Reload players to get updated IsImposter values
+            game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.LobbyCode == code);
+
+            var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+            foreach (var p in game.Players)
             {
-                var player = lobby.Players[i];
-                var connectionId = playerConnections.ContainsKey(player) ? playerConnections[player] : null;
-                if (connectionId != null)
+                var connectionId = Connections.FirstOrDefault(x => x.Value == p.PlayerId).Key;
+                if (connectionId == null) continue;
+
+                await Clients.Client(connectionId).SendAsync("WordAssigned", new
                 {
-                    var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-
-                    await Clients.Client(connectionId).SendAsync(
-                        "WordAssigned",
-                        new
-                        {
-
-                            word = player == lobby.Imposter ? words[1] : words[0],
-                            isImposter = player == lobby.Imposter,
-                            wordStartTime = startTime
-                        }
-                    );
-                }
+                    word = p.IsImposter ? game.ImposterWord : game.CommonWord,
+                    isImposter = p.IsImposter,
+                    wordStartTime = startTime
+                });
             }
         }
 
@@ -222,13 +297,42 @@ namespace backend.Controllers
         }
         public async Task RevealImposter(string lobbyCode)
         {
-            var lobby = lobbies[lobbyCode];
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.LobbyCode == lobbyCode);
 
-            var imposterName = lobby.Imposter;
+            if (game == null) return;
+
+            var imposter = game.Players.FirstOrDefault(p => p.PlayerId == game.ImposterId);
 
             await Clients.Group(lobbyCode)
-                .SendAsync("ImposterRevealed", imposterName);
+                .SendAsync("ImposterRevealed", imposter?.Name);
+
+            // --- Cleanup game data after revealing the imposter ---
+            var gameId = game.Id;
+
+            // Remove clues
+            var clues = _db.Set<ImposterClue>().Where(c => c.GameId == gameId);
+            _db.Set<ImposterClue>().RemoveRange(clues);
+
+            // Remove votes
+            var votes = _db.Set<ImposterVote>().Where(v => v.GameId == gameId);
+            _db.Set<ImposterVote>().RemoveRange(votes);
+
+            // Remove round decisions
+            var decisions = _db.Set<Sarkaar_Apis.Models.ImposterRoundDecision>().Where(d => d.GameId == gameId);
+            _db.Set<Sarkaar_Apis.Models.ImposterRoundDecision>().RemoveRange(decisions);
+
+            // Remove players
+            var players = _db.Set<ImposterPlayer>().Where(p => p.GameId == gameId);
+            _db.Set<ImposterPlayer>().RemoveRange(players);
+
+            // Remove the game itself
+            _db.Set<ImposterGame>().Remove(game);
+
+            await _db.SaveChangesAsync();
         }
+
 
         public async Task RequestWord(string code)
         {
@@ -236,99 +340,392 @@ namespace backend.Controllers
         }
         public async Task SendWord(string lobbyCode)
         {
-            var lobby = lobbies[lobbyCode];
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.LobbyCode == lobbyCode);
 
-            var word = lobby.Word;
-            var imposter = lobby.Imposter;
+            if (game == null) return;
 
             var startTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-            foreach (var player in lobby.Players)
+            foreach (var player in game.Players)
             {
-                if (playerConnections.TryGetValue(player, out var connectionId))
+                var connectionId = Connections.FirstOrDefault(x => x.Value == player.PlayerId).Key;
+
+                if (connectionId == null) continue;
+
+                await Clients.Client(connectionId).SendAsync("WordAssigned", new
                 {
-                    await Clients.Client(connectionId)
-                        .SendAsync("WordAssigned", new
-                        {
-                            word = player == imposter ? "You are the Imposter" : word,
-                            isImposter = player == imposter,
-                            wordStartTime = startTime
-                        });
+                    word = player.IsImposter ? "You are the Imposter" : game.CommonWord,
+                    isImposter = player.IsImposter,
+                    wordStartTime = startTime
+                });
+            }
+        }
+
+
+        public async Task SubmitClue(string lobbyCode, string playerName, string clue)
+        {
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.LobbyCode == lobbyCode);
+
+            if (game == null) return;
+
+            var player = game.Players.FirstOrDefault(p => p.Name == playerName);
+            if (player == null) return;
+
+            // Save clue for current round
+            var round = game.Round;
+            var existingClue = await _db.Set<ImposterClue>()
+                .FirstOrDefaultAsync(c => c.GameId == game.Id && c.PlayerId == player.PlayerId && c.Round == round);
+
+            if (existingClue == null)
+            {
+                _db.Add(new ImposterClue
+                {
+                    GameId = game.Id,
+                    PlayerId = player.PlayerId,
+                    Round = round,
+                    Clue = clue
+                });
+            }
+            else
+            {
+                existingClue.Clue = clue;
+            }
+            await _db.SaveChangesAsync();
+
+            // Check if all clues for this round are submitted
+            var cluesThisRound = await _db.Set<ImposterClue>()
+                .Where(c => c.GameId == game.Id && c.Round == round)
+                .ToListAsync();
+
+            if (cluesThisRound.Count == game.Players.Count)
+            {
+                var cluesDict = cluesThisRound.ToDictionary(
+                    c => game.Players.First(p => p.PlayerId == c.PlayerId).Name,
+                    c => c.Clue
+                );
+                await Clients.Group(lobbyCode).SendAsync("AllCluesSubmitted", cluesDict);
+                await SendViewerUpdate(lobbyCode); // <-- Add this
+            }
+            else
+            {
+                await SendViewerUpdate(lobbyCode); // <-- Add this
+            }
+        }
+
+        public async Task ProceedOrNextRound(string lobbyCode, string playerName, string action)
+        {
+            try
+            {
+                var game = await _db.ImposterGames
+                    .Include(g => g.Players)
+                    .FirstOrDefaultAsync(g => g.LobbyCode == lobbyCode);
+
+                if (game == null) return;
+
+                var player = game.Players.FirstOrDefault(p => p.Name == playerName);
+                if (player == null)
+                {
+                    await Clients.Caller.SendAsync("LobbyError", "Player not found in this game.");
+                    return;
+                }
+
+                var existing = await _db.ImposterRoundDecisions
+                    .FirstOrDefaultAsync(x => x.GameId == game.Id && x.PlayerId == player.PlayerId);
+
+                // Find the current round
+                var round = game.Round;
+
+                if (existing == null)
+                {
+                    _db.ImposterRoundDecisions.Add(new ImposterRoundDecision
+                    {
+                        GameId = game.Id,
+                        PlayerId = player.PlayerId,
+                        Decision = action,
+                        Round = game.Round // <-- Make sure this property exists and is set
+                    });
+                    await _db.SaveChangesAsync();
+                    await SendViewerUpdate(lobbyCode); // <-- Always update viewers
+                }
+                else
+                {
+                    existing.Decision = action;
+                }
+
+                await _db.SaveChangesAsync();
+
+                var decisions = await _db.ImposterRoundDecisions
+                    .Where(x => x.GameId == game.Id)
+                    .ToListAsync();
+
+                // ANYONE wants next round
+                if (decisions.Any(d => d.Decision == "next"))
+                {
+                    _db.ImposterRoundDecisions.RemoveRange(decisions);
+
+                    // Increment round number for the game
+                    game.Round += 1;
+                    await _db.SaveChangesAsync();
+
+                    await Clients.Group(lobbyCode).SendAsync("StartNextRound");
+                    return;
+                }
+
+                // ALL want voting
+                if (decisions.Count == game.Players.Count &&
+                    decisions.All(d => d.Decision == "vote"))
+                {
+                    _db.ImposterRoundDecisions.RemoveRange(decisions);
+                    await _db.SaveChangesAsync();
+
+                    await Clients.Group(lobbyCode).SendAsync("ProceedToVoting");
                 }
             }
-        }
-
-        public async Task SubmitClue(string code, string player, string clue)
-        {
-            if (!lobbyClues.ContainsKey(code))
-                lobbyClues[code] = new Dictionary<string, string>();
-
-            lobbyClues[code][player] = clue;
-
-            var lobby = lobbies[code];
-            if (lobbyClues[code].Count == lobby.Players.Count)
+            catch (Exception ex)
             {
-                // All clues submitted, broadcast to all
-                await Clients.Group(code).SendAsync("AllCluesSubmitted", lobbyClues[code]);
-                lobbyClues.Remove(code);
+                var errorMsg = ex.InnerException?.Message ?? ex.Message;
+                await Clients.Caller.SendAsync("LobbyError", errorMsg);
+                throw;
             }
         }
 
-        public async Task ProceedOrNextRound(string code, string player, string action)
+
+        public async Task VoteFor(string lobbyCode, string voterName, string suspectName)
         {
-            if (!proceedVotes.ContainsKey(code))
-                proceedVotes[code] = new Dictionary<string, string>();
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.LobbyCode == lobbyCode);
 
-            proceedVotes[code][player] = action;
+            if (game == null) return;
 
-            var lobby = lobbies[code];
+            var voter = game.Players.FirstOrDefault(p => p.Name == voterName);
+            var suspect = game.Players.FirstOrDefault(p => p.Name == suspectName);
 
-            // If any player wants next round, start next round
-            if (proceedVotes[code].Values.Contains("next"))
+            if (voter == null || suspect == null)
             {
-                proceedVotes.Remove(code);
-                await Clients.Group(code).SendAsync("StartNextRound");
+                await Clients.Caller.SendAsync("LobbyError", "Invalid voter or suspect.");
                 return;
             }
 
-            // If all players want to vote, proceed to voting
-            if (proceedVotes[code].Count == lobby.Players.Count &&
-                proceedVotes[code].Values.All(v => v == "vote"))
+            // Check if this voter already voted
+            var existingVote = await _db.Set<ImposterVote>()
+                .FirstOrDefaultAsync(v => v.GameId == game.Id && v.VoterId == voter.PlayerId);
+
+            if (existingVote == null)
             {
-                proceedVotes.Remove(code);
-                await Clients.Group(code).SendAsync("ProceedToVoting");
+                _db.Add(new ImposterVote
+                {
+                    GameId = game.Id,
+                    VoterId = voter.PlayerId,
+                    SuspectId = suspect.PlayerId
+                });
             }
-        }
+            else
+            {
+                existingVote.SuspectId = suspect.PlayerId;
+            }
+            await _db.SaveChangesAsync();
 
-        public async Task VoteFor(string code, string voter, string votedPlayer)
-        {
-            if (!lobbyVotes.ContainsKey(code))
-                lobbyVotes[code] = new Dictionary<string, string>();
+            // Count votes
+            var votes = await _db.Set<ImposterVote>()
+                .Where(v => v.GameId == game.Id)
+                .ToListAsync();
 
-            lobbyVotes[code][voter] = votedPlayer;
-
-            var lobby = lobbies[code];
-            if (lobbyVotes[code].Count == lobby.Players.Count)
+            if (votes.Count == game.Players.Count)
             {
                 // Tally votes
-                var voteCounts = lobbyVotes[code].Values.GroupBy(x => x)
-                    .ToDictionary(g => g.Key, g => g.Count());
+                var grouped = votes.GroupBy(v => v.SuspectId)
+                    .Select(g => new { SuspectId = g.Key, Count = g.Count() })
+                    .OrderByDescending(g => g.Count)
+                    .ToList();
 
-                // Find the player with the most votes
-                var maxVotes = voteCounts.Values.Max();
-                var mostVoted = voteCounts.Where(x => x.Value == maxVotes).Select(x => x.Key).ToList();
+                var imposter = game.Players.FirstOrDefault(p => p.PlayerId == game.ImposterId);
 
-                // If tie, pick first (or handle as you wish)
-                var accused = mostVoted[0];
+                // Find how many votes the imposter got
+                int imposterVotes = grouped.FirstOrDefault(g => g.SuspectId == imposter.PlayerId)?.Count ?? 0;
 
-                // Check if accused is the imposter
-                bool imposterCaught = accused == lobby.Imposter && maxVotes > lobby.Players.Count / 2;
+                // More than 50% required
+                int totalPlayers = game.Players.Count;
+                bool imposterCaught = imposterVotes > totalPlayers / 2;
 
-                await Clients.Group(code).SendAsync("VotingResult", imposterCaught, accused, lobby.Imposter);
+                // Find the accused (the player with the most votes)
+                var topGroup = grouped.FirstOrDefault();
+                var accused = topGroup != null ? game.Players.FirstOrDefault(p => p.PlayerId == topGroup.SuspectId) : null;
 
-                lobbyVotes.Remove(code);
+                game.Result = $"{imposterCaught}|{accused?.Name}|{imposter?.Name}";
+                game.Step = "result";
+                await _db.SaveChangesAsync();
+
+                await Clients.Group(lobbyCode).SendAsync("VotingResult", imposterCaught, accused?.Name, imposter?.Name);
+                await SendViewerUpdate(lobbyCode);
+            }
+            else
+            {
+                await SendViewerUpdate(lobbyCode); // <-- Add this
             }
         }
 
+        public async Task SeeWordAgain(string lobbyCode)
+        {
+            await Clients.Group(lobbyCode).SendAsync("SeeWordAgain");
+        }
+
+        public async Task Cleanup(string lobbyCode)
+        {
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .Include(g => g.Clues)
+                .Include(g => g.Votes)
+                .FirstOrDefaultAsync(g => g.LobbyCode == lobbyCode);
+
+            if (game == null)
+            {
+                await Clients.Caller.SendAsync("LobbyError", "Game not found for cleanup.");
+                return;
+            }
+
+            _db.ImposterPlayers.RemoveRange(game.Players);
+            _db.ImposterClues.RemoveRange(game.Clues);
+            _db.ImposterVotes.RemoveRange(game.Votes);
+
+            // Remove round decisions if you have them
+            var decisions = _db.ImposterRoundDecisions.Where(d => d.GameId == game.Id);
+            _db.ImposterRoundDecisions.RemoveRange(decisions);
+
+            // _db.ImposterRounds.RemoveRange(game.Rounds); // REMOVE THIS LINE
+
+            _db.ImposterGames.Remove(game);
+
+            await _db.SaveChangesAsync();
+
+            await Clients.Caller.SendAsync("CleanupSuccess", lobbyCode);
+        }
+
+        public async Task JoinAsViewer(string lobbyCode)
+        {
+            try
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, lobbyCode + "_viewers");
+                await SendViewerUpdate(lobbyCode);
+            }
+            catch (Exception ex)
+            {
+                // Log ex.Message and ex.StackTrace
+                await Clients.Caller.SendAsync("LobbyError", ex.Message);
+            }
+        }
+
+        private async Task SendViewerUpdate(string lobbyCode)
+        {
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.LobbyCode == lobbyCode);
+
+            if (game == null) return;
+
+            var clues = await _db.Set<ImposterClue>()
+                .Where(c => c.GameId == game.Id)
+                .ToListAsync();
+
+            var decisions = await _db.Set<ImposterRoundDecision>()
+                .Where(d => d.GameId == game.Id)
+                .ToListAsync();
+
+            var votes = await _db.Set<ImposterVote>()
+                .Where(v => v.GameId == game.Id)
+                .ToListAsync();
+
+            var rounds = clues
+                .GroupBy(c => c.Round)
+                .OrderBy(g => g.Key)
+                .Select(g => new {
+                    round = g.Key,
+                    clues = g.Select(c => new {
+                        PlayerId = c.PlayerId,
+                        Name = game.Players.FirstOrDefault(p => p.PlayerId == c.PlayerId)?.Name ?? "",
+                        text = c.Clue ?? ""
+                    }).ToList(),
+                    decisions = decisions
+                        .Where(d => d.Round == g.Key)
+                        .Select(d => new {
+                            PlayerId = d.PlayerId,
+                            Name = game.Players.FirstOrDefault(p => p.PlayerId == d.PlayerId)?.Name ?? "",
+                            action = d.Decision ?? ""
+                        }).ToList()
+                }).ToList();
+
+            var votesList = votes.Select(v => new {
+                VoterId = v.VoterId,
+                SuspectId = v.SuspectId,
+                voterName = game.Players.FirstOrDefault(p => p.PlayerId == v.VoterId)?.Name ?? "",
+                suspectName = game.Players.FirstOrDefault(p => p.PlayerId == v.SuspectId)?.Name ?? ""
+            }).ToList();
+
+            object result = null;
+            if (game.Step == "result" && !string.IsNullOrEmpty(game.Result))
+            {
+                result = game.Result;
+            }
+
+            var data = new {
+                players = game.Players.Select(p => new {
+                    PlayerId = p.PlayerId,
+                    Name = p.Name ?? "",
+                    IsImposter = p.PlayerId == game.ImposterId,
+                    Word = p.IsImposter ? (game.ImposterWord ?? "") : (game.CommonWord ?? "")
+                }).ToList(),
+                rounds,
+                votes = votesList,
+                step = game.Step ?? "",
+                result
+            };
+
+            await Clients.Group(lobbyCode + "_viewers").SendAsync("ViewerUpdate", data);
+        }
+
+        [HttpGet("viewer-state")]
+        public async Task<IActionResult> GetViewerState([FromQuery] Guid gameId)
+        {
+            var game = await _db.ImposterGames
+                .Include(g => g.Players)
+                .FirstOrDefaultAsync(g => g.Id == gameId);
+
+            if (game == null)
+                return new NotFoundResult();
+
+            // Get clues and votes from DB
+            var clues = await _db.Set<ImposterClue>()
+                .Where(c => c.GameId == gameId)
+                .ToListAsync();
+
+            var votes = await _db.Set<ImposterVote>()
+                .Where(v => v.GameId == gameId)
+                .ToListAsync();
+
+            return new OkObjectResult(new
+            {
+                players = game.Players.Select(p => new {
+                    playerId = p.PlayerId,
+                    name = p.Name,
+                    isImposter = p.IsImposter
+                }),
+                clues = clues.Select(c => new {
+                    playerId = c.PlayerId,
+                    clue = c.Clue
+                }),
+                votes = votes.Select(v => new {
+                    voterId = v.VoterId,
+                    suspectId = v.SuspectId
+                }),
+                commonWord = game.CommonWord,
+                imposterWord = game.ImposterWord,
+                imposterId = game.ImposterId,
+                isFinished = game.IsFinished
+            });
+        }
     }
 }

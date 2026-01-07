@@ -1,32 +1,33 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+using Sarkaar_Apis.Models;
 
-namespace Sarkaar_Apis.Models
+public class ImposterGame
 {
-    [Table("ImposterGames")]
-    public class ImposterGame
-    {
-        public Guid Id { get; set; }
-        public virtual List<ImposterPlayer> Players { get; set; } = new();
-        public string CommonWord { get; set; }
-        public string ImposterWord { get; set; }
-        public Guid ImposterId { get; set; }
-        public bool IsStarted { get; set; }
-        public bool IsFinished { get; set; }
-        // Votes will be handled separately, not as a Dictionary for EF Core
-        public int CurrentClueTurnIndex { get; set; } = 0;
-        public int CurrentVoteTurnIndex { get; set; } = 0;
-        public bool CluePhaseComplete { get; set; } = false;
-        public bool VotePhaseComplete { get; set; } = false;
+    public Guid Id { get; set; }
+    public string LobbyCode { get; set; }= null!;
 
-        // Add this property for votes
-        [NotMapped]
-        public Dictionary<Guid, Guid> Votes { get; set; } = new Dictionary<Guid, Guid>();
+    public string? CommonWord { get; set; }
+    public string? ImposterWord { get; set; }
+    public Guid? ImposterId { get; set; }
 
-        public string LobbyCode { get; set; }
-    }
+    public bool IsStarted { get; set; }
+    public bool IsFinished { get; set; }
+
+    public int CurrentClueTurnIndex { get; set; }
+    public int CurrentVoteTurnIndex { get; set; }
+
+    public bool CluePhaseComplete { get; set; }
+    public bool VotePhaseComplete { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? FinishedAt { get; set; }
+
+    public int Round { get; set; } = 1;
+
+    public string Step { get; set; }
+    public string Result { get; set; } 
+    public virtual ICollection<ImposterClue> Clues { get; set; }
+    public virtual ICollection<ImposterVote> Votes { get; set; } = new List<ImposterVote>();
+    public virtual ICollection<ImposterPlayer> Players { get; set; } = new List<ImposterPlayer>();
 }

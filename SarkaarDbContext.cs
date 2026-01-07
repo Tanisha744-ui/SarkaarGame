@@ -12,7 +12,10 @@ public class SarkaarDbContext : DbContext
     public DbSet<Team> Teams { get; set; }
     public DbSet<ImposterGame> ImposterGames { get; set; }
     public DbSet<ImposterPlayer> ImposterPlayers { get; set; }
-
+    public DbSet<ImposterClue> ImposterClues { get; set; }
+    public DbSet<ImposterVote> ImposterVotes { get; set; }
+    public DbSet<ImposterRoundDecision> ImposterRoundDecisions { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
