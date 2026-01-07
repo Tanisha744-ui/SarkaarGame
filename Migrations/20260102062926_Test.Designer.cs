@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Sarkaar_Apis.Migrations
 {
     [DbContext(typeof(SarkaarDbContext))]
-    [Migration("20251229063856_RenameImposterGameTable")]
-    partial class RenameImposterGameTable
+    [Migration("20260102062926_Test")]
+    partial class Test
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,6 +23,113 @@ namespace Sarkaar_Apis.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("ImposterClue", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Clue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Round")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("ImposterClues");
+                });
+
+            modelBuilder.Entity("ImposterGame", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("CluePhaseComplete")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("CommonWord")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CurrentClueTurnIndex")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CurrentVoteTurnIndex")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ImposterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ImposterWord")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsFinished")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsStarted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LobbyCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Result")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Round")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Step")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("VotePhaseComplete")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ImposterGames");
+                });
+
+            modelBuilder.Entity("ImposterVote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("SuspectId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("VoterId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("ImposterVotes");
+                });
 
             modelBuilder.Entity("Role", b =>
                 {
@@ -58,46 +165,6 @@ namespace Sarkaar_Apis.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Sarkaar_Apis.Models.ImposterGame", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("CluePhaseComplete")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("CommonWord")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("CurrentClueTurnIndex")
-                        .HasColumnType("int");
-
-                    b.Property<int>("CurrentVoteTurnIndex")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("ImposterId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ImposterWord")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsFinished")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsStarted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("VotePhaseComplete")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ImposterGames");
-                });
-
             modelBuilder.Entity("Sarkaar_Apis.Models.ImposterPlayer", b =>
                 {
                     b.Property<Guid>("PlayerId")
@@ -105,7 +172,6 @@ namespace Sarkaar_Apis.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Clue")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid>("GameId")
@@ -123,6 +189,27 @@ namespace Sarkaar_Apis.Migrations
                     b.HasIndex("GameId");
 
                     b.ToTable("ImposterPlayers");
+                });
+
+            modelBuilder.Entity("Sarkaar_Apis.Models.ImposterRoundDecision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ImposterRoundDecisions");
                 });
 
             modelBuilder.Entity("Team", b =>
@@ -183,9 +270,31 @@ namespace Sarkaar_Apis.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("ImposterClue", b =>
+                {
+                    b.HasOne("ImposterGame", "ImposterGame")
+                        .WithMany("Clues")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ImposterGame");
+                });
+
+            modelBuilder.Entity("ImposterVote", b =>
+                {
+                    b.HasOne("ImposterGame", "ImposterGame")
+                        .WithMany("Votes")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ImposterGame");
+                });
+
             modelBuilder.Entity("Sarkaar_Apis.Models.ImposterPlayer", b =>
                 {
-                    b.HasOne("Sarkaar_Apis.Models.ImposterGame", "Game")
+                    b.HasOne("ImposterGame", "Game")
                         .WithMany("Players")
                         .HasForeignKey("GameId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -216,9 +325,13 @@ namespace Sarkaar_Apis.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("Sarkaar_Apis.Models.ImposterGame", b =>
+            modelBuilder.Entity("ImposterGame", b =>
                 {
+                    b.Navigation("Clues");
+
                     b.Navigation("Players");
+
+                    b.Navigation("Votes");
                 });
 #pragma warning restore 612, 618
         }

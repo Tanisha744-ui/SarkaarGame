@@ -5,25 +5,25 @@
 namespace Sarkaar_Apis.Migrations
 {
     /// <inheritdoc />
-    public partial class table : Migration
+    public partial class round : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "LobbyCode",
-                table: "ImposterGames",
-                type: "nvarchar(max)",
+            migrationBuilder.AddColumn<int>(
+                name: "Round",
+                table: "ImposterRoundDecisions",
+                type: "int",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: 0);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
-                name: "LobbyCode",
-                table: "ImposterGames");
+                name: "Round",
+                table: "ImposterRoundDecisions");
         }
     }
 }
