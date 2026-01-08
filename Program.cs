@@ -30,7 +30,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp",
         builder => builder
-            .WithOrigins("http://localhost:4200","https://sarkaarfrontend-7skg.onrender.com/")
+            .WithOrigins("http://localhost:4200","https://thetriogame.onrender.com/")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials()
