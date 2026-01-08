@@ -25,19 +25,19 @@ namespace Sarkaar_Apis.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Clue")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("PlayerId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Round")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 
@@ -50,55 +50,55 @@ namespace Sarkaar_Apis.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("CluePhaseComplete")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("CommonWord")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("CurrentClueTurnIndex")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<int>("CurrentVoteTurnIndex")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("FinishedAt")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("ImposterId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("ImposterWord")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsFinished")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsStarted")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.Property<string>("LobbyCode")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<string>("Result")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<int>("Round")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<string>("Step")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("text");
 
                     b.Property<bool>("VotePhaseComplete")
-                        .HasColumnType("bit");
+                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 
@@ -109,16 +109,16 @@ namespace Sarkaar_Apis.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("GameId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("SuspectId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("VoterId")
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
@@ -162,56 +162,6 @@ namespace Sarkaar_Apis.Migrations
                 });
 
             modelBuilder.Entity("SarkaarGame.Models.GameControls", b =>
-            modelBuilder.Entity("Sarkaar_Apis.Models.ImposterPlayer", b =>
-                {
-                    b.Property<Guid>("PlayerId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Clue")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("IsImposter")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Name")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("PlayerId");
-
-                    b.HasIndex("GameId");
-
-                    b.ToTable("ImposterPlayers");
-                });
-
-            modelBuilder.Entity("Sarkaar_Apis.Models.ImposterRoundDecision", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Decision")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("GameId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("PlayerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Round")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ImposterRoundDecisions");
-                });
-
-            modelBuilder.Entity("Team", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -262,6 +212,55 @@ namespace Sarkaar_Apis.Migrations
                     b.HasIndex("TeamId");
 
                     b.ToTable("Bids");
+                });
+
+            modelBuilder.Entity("Sarkaar_Apis.Models.ImposterPlayer", b =>
+                {
+                    b.Property<Guid>("PlayerId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Clue")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsImposter")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .HasColumnType("text");
+
+                    b.HasKey("PlayerId");
+
+                    b.HasIndex("GameId");
+
+                    b.ToTable("ImposterPlayers");
+                });
+
+            modelBuilder.Entity("Sarkaar_Apis.Models.ImposterRoundDecision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Decision")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PlayerId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Round")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ImposterRoundDecisions");
                 });
 
             modelBuilder.Entity("Sarkaar_Apis.Models.Team", b =>
@@ -320,7 +319,6 @@ namespace Sarkaar_Apis.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Sarkaar_Apis.Models.Bid", b =>
             modelBuilder.Entity("ImposterClue", b =>
                 {
                     b.HasOne("ImposterGame", "ImposterGame")
@@ -343,6 +341,17 @@ namespace Sarkaar_Apis.Migrations
                     b.Navigation("ImposterGame");
                 });
 
+            modelBuilder.Entity("Sarkaar_Apis.Models.Bid", b =>
+                {
+                    b.HasOne("Sarkaar_Apis.Models.Team", "Team")
+                        .WithMany("Bids")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Team");
+                });
+
             modelBuilder.Entity("Sarkaar_Apis.Models.ImposterPlayer", b =>
                 {
                     b.HasOne("ImposterGame", "Game")
@@ -352,17 +361,6 @@ namespace Sarkaar_Apis.Migrations
                         .IsRequired();
 
                     b.Navigation("Game");
-                });
-
-            modelBuilder.Entity("Team", b =>
-                {
-                    b.HasOne("Sarkaar_Apis.Models.Team", "Team")
-                        .WithMany("Bids")
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Team");
                 });
 
             modelBuilder.Entity("User", b =>
@@ -376,9 +374,6 @@ namespace Sarkaar_Apis.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("Sarkaar_Apis.Models.Team", b =>
-                {
-                    b.Navigation("Bids");
             modelBuilder.Entity("ImposterGame", b =>
                 {
                     b.Navigation("Clues");
@@ -386,6 +381,11 @@ namespace Sarkaar_Apis.Migrations
                     b.Navigation("Players");
 
                     b.Navigation("Votes");
+                });
+
+            modelBuilder.Entity("Sarkaar_Apis.Models.Team", b =>
+                {
+                    b.Navigation("Bids");
                 });
 #pragma warning restore 612, 618
         }
