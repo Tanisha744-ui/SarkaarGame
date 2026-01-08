@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.SignalR;
 var builder = WebApplication.CreateBuilder(args);
 
 // JWT Authentication configuration
@@ -31,7 +32,7 @@ builder.Services.AddCors(options =>
             .WithOrigins("http://localhost:4200")
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials() // <-- Add this line
+            .AllowCredentials()
     );
 });
 builder.Services.AddDbContext<SarkaarDbContext>(options =>
@@ -39,6 +40,7 @@ builder.Services.AddDbContext<SarkaarDbContext>(options =>
 );
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "Sarkaar API", Version = "v1" });

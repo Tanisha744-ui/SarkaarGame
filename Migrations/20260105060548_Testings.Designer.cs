@@ -2,24 +2,27 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
 namespace Sarkaar_Apis.Migrations
 {
     [DbContext(typeof(SarkaarDbContext))]
-    partial class SarkaarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260105060548_Testings")]
+    partial class Testings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
                 .HasAnnotation("ProductVersion", "9.0.10")
-                .HasAnnotation("Relational:MaxIdentifierLength", 63);
+                .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
-            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
             modelBuilder.Entity("ImposterClue", b =>
                 {
@@ -131,13 +134,13 @@ namespace Sarkaar_Apis.Migrations
                 {
                     b.Property<int>("RoleId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RoleId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RoleId"));
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("RoleId");
 
@@ -161,7 +164,6 @@ namespace Sarkaar_Apis.Migrations
                         });
                 });
 
-            modelBuilder.Entity("SarkaarGame.Models.GameControls", b =>
             modelBuilder.Entity("Sarkaar_Apis.Models.ImposterPlayer", b =>
                 {
                     b.Property<Guid>("PlayerId")
@@ -203,9 +205,6 @@ namespace Sarkaar_Apis.Migrations
                     b.Property<Guid>("PlayerId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("Round")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.ToTable("ImposterRoundDecisions");
@@ -215,75 +214,24 @@ namespace Sarkaar_Apis.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("GameCode")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Interval")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MaxBidAmount")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GameControls");
-                });
-
-            modelBuilder.Entity("Sarkaar_Apis.Models.Bid", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Amount")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("GameId")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("TeamId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TeamId");
-
-                    b.ToTable("Bids");
-                });
-
-            modelBuilder.Entity("Sarkaar_Apis.Models.Team", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("GameCode")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TeamLeadId")
+                        .HasColumnType("int");
 
                     b.Property<string>("TeamLeadUsername")
-                        .HasColumnType("text");
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("TeamLeadId");
 
                     b.ToTable("Teams");
                 });
@@ -292,26 +240,26 @@ namespace Sarkaar_Apis.Migrations
                 {
                     b.Property<int>("UserId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("RoleId")
-                        .HasColumnType("integer");
+                        .HasColumnType("int");
 
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("UserId");
 
@@ -320,7 +268,6 @@ namespace Sarkaar_Apis.Migrations
                     b.ToTable("Users");
                 });
 
-            modelBuilder.Entity("Sarkaar_Apis.Models.Bid", b =>
             modelBuilder.Entity("ImposterClue", b =>
                 {
                     b.HasOne("ImposterGame", "ImposterGame")
@@ -356,13 +303,13 @@ namespace Sarkaar_Apis.Migrations
 
             modelBuilder.Entity("Team", b =>
                 {
-                    b.HasOne("Sarkaar_Apis.Models.Team", "Team")
-                        .WithMany("Bids")
-                        .HasForeignKey("TeamId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("User", "TeamLead")
+                        .WithMany()
+                        .HasForeignKey("TeamLeadId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Team");
+                    b.Navigation("TeamLead");
                 });
 
             modelBuilder.Entity("User", b =>
@@ -376,9 +323,6 @@ namespace Sarkaar_Apis.Migrations
                     b.Navigation("Role");
                 });
 
-            modelBuilder.Entity("Sarkaar_Apis.Models.Team", b =>
-                {
-                    b.Navigation("Bids");
             modelBuilder.Entity("ImposterGame", b =>
                 {
                     b.Navigation("Clues");

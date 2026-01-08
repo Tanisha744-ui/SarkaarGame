@@ -5937,19 +5937,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\aayush.goel\\.nuget\\packages\\": {}
+    "C:\\Users\\tanisha1\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\aayush.goel\\Desktop\\Games\\SarkaarGame\\Sarkaar_Apis.csproj",
+      "projectUniqueName": "C:\\Users\\tanisha1\\Desktop\\Games Innova\\backend\\Sarkaar_Apis.csproj",
       "projectName": "Sarkaar_Apis",
-      "projectPath": "C:\\Users\\aayush.goel\\Desktop\\Games\\SarkaarGame\\Sarkaar_Apis.csproj",
-      "packagesPath": "C:\\Users\\aayush.goel\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\aayush.goel\\Desktop\\Games\\SarkaarGame\\obj\\",
+      "projectPath": "C:\\Users\\tanisha1\\Desktop\\Games Innova\\backend\\Sarkaar_Apis.csproj",
+      "packagesPath": "C:\\Users\\tanisha1\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\tanisha1\\Desktop\\Games Innova\\backend\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\aayush.goel\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\tanisha1\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -6029,7 +6029,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.307/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.308/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

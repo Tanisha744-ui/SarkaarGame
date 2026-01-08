@@ -12,6 +12,12 @@ public class SarkaarDbContext : DbContext
     public DbSet<Bid> Bids { get; set; }
     public DbSet<SarkaarGame.Models.GameControls> GameControls { get; set; }
 
+    public DbSet<ImposterGame> ImposterGames { get; set; }
+    public DbSet<ImposterPlayer> ImposterPlayers { get; set; }
+    public DbSet<ImposterClue> ImposterClues { get; set; }
+    public DbSet<ImposterVote> ImposterVotes { get; set; }
+    public DbSet<ImposterRoundDecision> ImposterRoundDecisions { get; set; }
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -20,7 +26,11 @@ public class SarkaarDbContext : DbContext
                     new Role { RoleId = 2, Name = "Viewer" },
                     new Role { RoleId = 3, Name = "TeamLead" }
         );
-
-        // TeamLead and TeamLeadId removed from Team
+        // ImposterGame/ImposterPlayer relationship
+        modelBuilder.Entity<ImposterPlayer>()
+            .HasOne(p => p.Game)
+            .WithMany(g => g.Players)
+            .HasForeignKey(p => p.GameId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
