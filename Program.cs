@@ -107,6 +107,14 @@ app.MapGet("/", context =>
     context.Response.Redirect("/swagger");
     return Task.CompletedTask;
 });
+app.MapGet("/debug/db", (IConfiguration config) =>
+{
+    var cs = config.GetConnectionString("Postgres");
+    return string.IsNullOrWhiteSpace(cs)
+        ? Results.Problem("Postgres connection string is NULL or EMPTY")
+        : Results.Ok(cs);
+});
+
 
 app.Run();
 
