@@ -39,7 +39,6 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<SarkaarDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres"))
 );
-builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(c =>
@@ -84,21 +83,25 @@ builder.Services.AddSession(options =>
 builder.Services.AddSignalR();
 var app = builder.Build();
 
-
+app.UseRouting();
 app.UseCors("AllowAngularApp");
 // Configure the HTTP request pipeline.
-app.MapOpenApi();
+
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 // Map SignalR hub endpoint
 app.MapHub<SarkaarRoomHub>("/sarkaarRoomHub");
-
+app.MapGet("/health", () => "API is alive");
 app.MapGet("/", context =>
 {
     context.Response.Redirect("/swagger");
