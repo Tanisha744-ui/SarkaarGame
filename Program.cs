@@ -30,7 +30,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp",
         builder => builder
-            .WithOrigins("http://localhost:4200","https://thetriogames.onrender.com")
+            .WithOrigins("http://localhost:4200","https://thetriogames.onrender.com","https://triogamebackend.onrender.com")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials()
@@ -83,21 +83,20 @@ builder.Services.AddSession(options =>
 builder.Services.AddSignalR();
 var app = builder.Build();
 
+app.UseHttpsRedirection();
 app.UseRouting();
 app.UseCors("AllowAngularApp");
 // Configure the HTTP request pipeline.
 
-app.UseSwagger();
-app.UseSwaggerUI();
-
-if (!app.Environment.IsProduction())
-{
-    app.UseHttpsRedirection();
-}
-
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseSwagger();
+app.UseSwaggerUI();
+
+
+
 app.MapControllers();
 // Map SignalR hub endpoint
 app.MapHub<SarkaarRoomHub>("/sarkaarRoomHub");
