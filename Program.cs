@@ -28,11 +28,12 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
+    options.AddPolicy("AllowAngularApp",
         builder => builder
-            .AllowAnyOrigin()
+            .WithOrigins("http://localhost:4200","https://thetriogames.onrender.com")
             .AllowAnyHeader()
             .AllowAnyMethod()
+            .AllowCredentials()
     );
 });
 builder.Services.AddDbContext<SarkaarDbContext>(options =>
@@ -83,7 +84,7 @@ builder.Services.AddSignalR();
 var app = builder.Build();
 
 app.UseRouting();
-app.UseCors("AllowAll");
+app.UseCors("AllowAngularApp");
 // Configure the HTTP request pipeline.
 
 app.UseSwagger();
