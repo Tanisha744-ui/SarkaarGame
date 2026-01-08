@@ -34,9 +34,8 @@ builder.Services.AddCors(options =>
             .AllowCredentials() // <-- Add this line
     );
 });
-
 builder.Services.AddDbContext<SarkaarDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres"))
 );
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
@@ -98,11 +97,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 // Map SignalR hub endpoint
-// app.MapHub<backend.LobbyHub>("/lobbyHub");
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+app.MapHub<SarkaarRoomHub>("/sarkaarRoomHub");
 
 app.MapGet("/", context =>
 {
@@ -112,7 +107,3 @@ app.MapGet("/", context =>
 
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
