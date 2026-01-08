@@ -28,12 +28,11 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAngularApp",
+    options.AddPolicy("AllowAll",
         builder => builder
             .AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials()
     );
 });
 builder.Services.AddDbContext<SarkaarDbContext>(options =>
@@ -84,7 +83,7 @@ builder.Services.AddSignalR();
 var app = builder.Build();
 
 app.UseRouting();
-app.UseCors("AllowAngularApp");
+app.UseCors("AllowAll");
 // Configure the HTTP request pipeline.
 
 app.UseSwagger();
