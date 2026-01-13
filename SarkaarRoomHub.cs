@@ -65,4 +65,10 @@ public class SarkaarRoomHub : Hub
         // Send bid info to all clients in the room
         await Clients.Group(gameId.ToString()).SendAsync("BidReceived", new { gameId, teamId, amount });
     }
+
+        // Added: Allow Angular to call SendBid, which broadcasts the bid
+        public async Task SendBid(int gameId, int teamId, int amount)
+        {
+            await BroadcastBid(gameId, teamId, amount);
+        }
 }
