@@ -15,14 +15,15 @@ public class SarkaarRoomHub : Hub
 
     public async Task<object> CreateRoomWithTeamCode(string teamName)
     {
-        var roomCode = new System.Random().Next(100000, 999999).ToString();
+        var gameId = new System.Random().Next(100000, 999999);
+        var roomCode = gameId.ToString();
         var teamCode = new System.Random().Next(10000000, 99999999).ToString();
         rooms[roomCode] = new List<string> { teamName };
         teamCodes[teamCode] = roomCode;
         teamMembers[teamCode] = new List<string>();
-        await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
+        await Groups.AddToGroupAsync(Context.ConnectionId, roomCode); // roomCode == gameId.ToString()
         await Clients.Group(roomCode).SendAsync("TeamsUpdated", rooms[roomCode]);
-        return new { roomCode, teamCode };
+        return new { roomCode, teamCode, gameId };
     }
 
     public async Task<object> JoinRoomWithTeamCode(string roomCode, string teamName)
@@ -36,9 +37,10 @@ public class SarkaarRoomHub : Hub
         rooms[roomCode].Add(teamName);
         teamCodes[teamCode] = roomCode;
         teamMembers[teamCode] = new List<string>();
-        await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
+        await Groups.AddToGroupAsync(Context.ConnectionId, roomCode); // roomCode == gameId.ToString()
         await Clients.Group(roomCode).SendAsync("TeamsUpdated", rooms[roomCode]);
-        return new { success = true, teamCode };
+        int gameId = int.TryParse(roomCode, out var gid) ? gid : 0;
+        return new { success = true, teamCode, gameId };
     }
 
     public async Task<bool> JoinTeamAsMember(string teamCode, string memberName)
