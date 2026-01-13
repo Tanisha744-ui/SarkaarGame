@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.SignalR;
 using Npgsql.EntityFrameworkCore.PostgreSQL;
+using backend.Controllers;
 var builder = WebApplication.CreateBuilder(args);
 
 // JWT Authentication configuration
@@ -30,7 +31,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAngularApp",
         builder => builder
-            .WithOrigins("http://localhost:4200","https://thetriogames.onrender.com","https://triogamebackend.onrender.com")
+            .WithOrigins("http://localhost:4200", "https://thetriogames.onrender.com", "https://triogamebackend.onrender.com")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials()
@@ -100,6 +101,7 @@ app.UseSwaggerUI();
 app.MapControllers();
 // Map SignalR hub endpoint
 app.MapHub<SarkaarRoomHub>("/sarkaarRoomHub");
+app.MapHub<LobbyHub>("/lobbyHub");
 app.MapGet("/health", () => "API is alive");
 app.MapGet("/", context =>
 {

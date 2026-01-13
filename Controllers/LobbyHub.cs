@@ -180,6 +180,10 @@ namespace backend.Controllers
 
             if (game == null) return;
 
+            // Prevent re-assignment if words are already set
+            if (!string.IsNullOrEmpty(game.CommonWord) && !string.IsNullOrEmpty(game.ImposterWord))
+                return;
+
             var rnd = new Random();
             var playersList = game.Players.ToList();
 
@@ -375,44 +379,38 @@ namespace backend.Controllers
             var player = game.Players.FirstOrDefault(p => p.Name == playerName);
             if (player == null) return;
 
-            // Save clue for current round
-            var round = game.Round;
-            var existingClue = await _db.Set<ImposterClue>()
-                .FirstOrDefaultAsync(c => c.GameId == game.Id && c.PlayerId == player.PlayerId && c.Round == round);
-
-            if (existingClue == null)
+            // Save clue in DB
+            var imposterClue = new ImposterClue
             {
-                _db.Add(new ImposterClue
-                {
-                    GameId = game.Id,
-                    PlayerId = player.PlayerId,
-                    Round = round,
-                    Clue = clue
-                });
-            }
-            else
-            {
-                existingClue.Clue = clue;
-            }
-            await _db.SaveChangesAsync();
+                GameId = game.Id,
+                PlayerId = player.PlayerId,
+                Round = game.Round,
+                Clue = clue
+            };
+            _db.ImposterClues.Add(imposterClue);
+            await _db.SaveChangesAsync(); // <--- THIS IS CRUCIAL
 
-            // Check if all clues for this round are submitted
-            var cluesThisRound = await _db.Set<ImposterClue>()
-                .Where(c => c.GameId == game.Id && c.Round == round)
+            // After saving the clue, broadcast to viewers
+            await Clients.Group(lobbyCode + "_viewers").SendAsync("ViewerClueUpdate", new {
+                player = playerName,
+                clue = clue
+            });
+
+            // Check if all players have submitted clues for this round
+            var cluesThisRound = await _db.ImposterClues
+                .Where(c => c.GameId == game.Id && c.Round == game.Round)
                 .ToListAsync();
 
             if (cluesThisRound.Count == game.Players.Count)
             {
-                var cluesDict = cluesThisRound.ToDictionary(
-                    c => game.Players.First(p => p.PlayerId == c.PlayerId).Name,
-                    c => c.Clue
+                // Prepare clues dictionary
+                var cluesDict = game.Players.ToDictionary(
+                    p => p.Name ?? "",
+                    p => cluesThisRound.FirstOrDefault(c => c.PlayerId == p.PlayerId)?.Clue ?? ""
                 );
+
+                // Broadcast to all clients
                 await Clients.Group(lobbyCode).SendAsync("AllCluesSubmitted", cluesDict);
-                await SendViewerUpdate(lobbyCode); // <-- Add this
-            }
-            else
-            {
-                await SendViewerUpdate(lobbyCode); // <-- Add this
             }
         }
 

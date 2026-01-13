@@ -323,11 +323,11 @@ namespace Sarkaar_Apis.Controllers
             var gameId = game.Id;
 
             // Remove all related data
-            await _db.Database.ExecuteSqlRawAsync("DELETE FROM ImposterRoundDecisions WHERE GameId = {0}", gameId);
-            await _db.Database.ExecuteSqlRawAsync("DELETE FROM ImposterVotes WHERE GameId = {0}", gameId);
-            await _db.Database.ExecuteSqlRawAsync("DELETE FROM ImposterClues WHERE GameId = {0}", gameId);
-            await _db.Database.ExecuteSqlRawAsync("DELETE FROM ImposterPlayers WHERE GameId = {0}", gameId);
-            await _db.Database.ExecuteSqlRawAsync("DELETE FROM ImposterGames WHERE Id = {0}", gameId);
+            await _db.Database.ExecuteSqlRawAsync("DELETE FROM \"ImposterRoundDecisions\" WHERE \"GameId\" = {0}", gameId);
+            await _db.Database.ExecuteSqlRawAsync("DELETE FROM \"ImposterVotes\" WHERE \"GameId\" = {0}", gameId);
+            await _db.Database.ExecuteSqlRawAsync("DELETE FROM \"ImposterClues\" WHERE \"GameId\" = {0}", gameId);
+            await _db.Database.ExecuteSqlRawAsync("DELETE FROM \"ImposterPlayers\" WHERE \"GameId\" = {0}", gameId);
+            await _db.Database.ExecuteSqlRawAsync("DELETE FROM \"ImposterGames\" WHERE \"Id\" = {0}", gameId);
 
             return Ok();
         }
