@@ -68,9 +68,14 @@ public class SarkaarRoomHub : Hub
         await Clients.Group(gameId.ToString()).SendAsync("BidReceived", new { gameId, teamId, amount });
     }
 
-        // Added: Allow Angular to call SendBid, which broadcasts the bid
-        public async Task SendBid(int gameId, int teamId, int amount)
-        {
-            await BroadcastBid(gameId, teamId, amount);
-        }
+    // Added: Allow Angular to call SendBid, which broadcasts the bid
+    public async Task SendBid(int gameId, int teamId, int amount)
+    {
+        await BroadcastBid(gameId, teamId, amount);
+    }
+    public async Task JoinGameGroup(int gameId)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
+    }
+
 }

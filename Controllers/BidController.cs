@@ -72,7 +72,6 @@ namespace Sarkaar_Apis.Controllers
 
 
         [HttpPost]
-        [HttpPost]
         public async Task<ActionResult<BidDto>> CreateBid(CreateBidDto dto)
         {
             var existingBid = await _context.Bids
