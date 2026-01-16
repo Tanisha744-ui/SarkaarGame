@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Sarkaar_Apis.Models;
+using SarkaarGame.Models;
+
 public class SarkaarDbContext : DbContext
 {
     public SarkaarDbContext(DbContextOptions<SarkaarDbContext> options) : base(options)
@@ -17,7 +19,8 @@ public class SarkaarDbContext : DbContext
     public DbSet<ImposterClue> ImposterClues { get; set; }
     public DbSet<ImposterVote> ImposterVotes { get; set; }
     public DbSet<ImposterRoundDecision> ImposterRoundDecisions { get; set; }
-    
+    public DbSet<ChatMessage> ChatMessages { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
