@@ -77,5 +77,10 @@ public class SarkaarRoomHub : Hub
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
     }
+    public async Task JoinRoomAsSpectator(string roomCode, string name)
+    {
+        await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
+    }
+
 
 }
