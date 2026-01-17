@@ -81,6 +81,10 @@ public class SarkaarRoomHub : Hub
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
     }
-
+    public async Task SetGameStarted(string roomCode, bool started)
+    {
+        // Logic to handle game start
+        await Clients.Group(roomCode).SendAsync("GameStarted", started);
+    }
 
 }
