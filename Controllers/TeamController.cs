@@ -1,4 +1,4 @@
-    using Sarkaar_Apis.Models;
+using Sarkaar_Apis.Models;
     
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -64,7 +64,11 @@ public class TeamController : ControllerBase
         var controls = _context.GameControls.Where(c => c.GameCode == gameCode);
         _context.GameControls.RemoveRange(controls);
 
+        // Remove all ChatMessages for this game code
+        var chatMessages = _context.ChatMessages.Where(m => m.RoomCode == gameCode);
+        _context.ChatMessages.RemoveRange(chatMessages);
+
         await _context.SaveChangesAsync();
-        return Ok(new { message = "Teams and controls deleted successfully." });
+        return Ok(new { message = "Teams, controls, and chats deleted successfully." });
     }
 }
