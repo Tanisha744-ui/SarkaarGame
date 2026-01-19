@@ -87,4 +87,9 @@ public class SarkaarRoomHub : Hub
         await Clients.Group(roomCode).SendAsync("GameStarted", started);
     }
 
+    public async Task SendChatMessage(string roomCode, string sender, string text)
+    {
+        await Clients.Group(roomCode).SendAsync("ChatMessageReceived", new { sender, text });
+    }
+
 }
