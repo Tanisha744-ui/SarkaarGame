@@ -1,5 +1,5 @@
 using Sarkaar_Apis.Models;
-    
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -43,7 +43,7 @@ public class TeamController : ControllerBase
             return BadRequest("Team name must be at least 3 characters.");
         if (string.IsNullOrWhiteSpace(dto.GameCode))
             return BadRequest("Game code is required.");
-        if(!dto.Balance.HasValue || dto.Balance < 0)
+        if (!dto.Balance.HasValue || dto.Balance < 0)
             return BadRequest("Initial balance must be a non-negative number.");
         // Only store the team name and game code
         var team = new Team
@@ -72,5 +72,16 @@ public class TeamController : ControllerBase
 
         await _context.SaveChangesAsync();
         return Ok(new { message = "Teams, controls, and chats deleted successfully." });
+    }
+    [HttpPut("update-balance/{teamId}")]
+    public async Task<IActionResult> UpdateBalance(int teamId, [FromBody] decimal newBalance)
+    {
+        var team = await _context.Teams.FindAsync(teamId);
+        if (team == null)
+            return NotFound("Team not found.");
+
+        team.Balance = newBalance;
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Balance updated successfully." });
     }
 }
