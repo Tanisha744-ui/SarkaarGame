@@ -43,12 +43,14 @@ public class TeamController : ControllerBase
             return BadRequest("Team name must be at least 3 characters.");
         if (string.IsNullOrWhiteSpace(dto.GameCode))
             return BadRequest("Game code is required.");
-
+        if(!dto.Balance.HasValue || dto.Balance < 0)
+            return BadRequest("Initial balance must be a non-negative number.");
         // Only store the team name and game code
         var team = new Team
         {
             Name = dto.Name,
-            GameCode = dto.GameCode
+            GameCode = dto.GameCode,
+            Balance = dto.Balance.Value
         };
         _context.Teams.Add(team);
         await _context.SaveChangesAsync();
