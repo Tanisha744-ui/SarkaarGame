@@ -29,7 +29,8 @@ public class TeamController : ControllerBase
             {
                 Id = t.Id,
                 Name = t.Name,
-                GameCode = t.GameCode
+                GameCode = t.GameCode,
+                Balance = t.Balance
             })
             .ToListAsync();
         return Ok(teams);
