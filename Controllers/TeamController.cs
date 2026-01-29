@@ -82,6 +82,6 @@ public class TeamController : ControllerBase
 
         team.Balance = newBalance;
         await _context.SaveChangesAsync();
-        return Ok(new { message = "Balance updated successfully." });
+        return Ok(team);
     }
 }
