@@ -65,17 +65,21 @@ public class SarkaarRoomHub : Hub
     public async Task BroadcastBid(int gameId, int teamId, int amount)
     {
         // Send bid info to all clients in the room
+        Console.WriteLine($"Broadcasting bid in game {gameId} from team {teamId} amount {amount}");
         await Clients.Group(gameId.ToString()).SendAsync("BidReceived", new { gameId, teamId, amount });
     }
 
     // Added: Allow Angular to call SendBid, which broadcasts the bid
-    public async Task SendBid(int gameId, int teamId, int amount)
+    public async Task SendBid(string roomCode, int teamId, int amount)
     {
-        await BroadcastBid(gameId, teamId, amount);
+        Console.WriteLine($"Received bid for roomCode: {roomCode}, teamId: {teamId}, amount: {amount}");
+        await Clients.Group(roomCode)
+        .SendAsync("BidReceived", new { roomCode, teamId, amount });
     }
-    public async Task JoinGameGroup(int gameId)
+    public async Task JoinGameGroup(string roomCode)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, gameId.ToString());
+        Console.WriteLine($"Joining group for roomCode: {roomCode}");
+        await Groups.AddToGroupAsync(Context.ConnectionId, roomCode);
     }
     public async Task JoinRoomAsSpectator(string roomCode, string name)
     {
@@ -89,6 +93,7 @@ public class SarkaarRoomHub : Hub
 
     public async Task SendChatMessage(string roomCode, string sender, string text)
     {
+        Console.WriteLine($"Chat message in room {roomCode} from {sender}: {text}");
         await Clients.Group(roomCode).SendAsync("ChatMessageReceived", new { sender, text });
     }
 
