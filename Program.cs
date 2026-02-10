@@ -102,6 +102,7 @@ app.MapControllers();
 // Map SignalR hub endpoint
 app.MapHub<SarkaarRoomHub>("/sarkaarRoomHub");
 app.MapHub<LobbyHub>("/lobbyHub");
+app.MapHub<Sarkaar_Apis.Hubs.PartyHub>("/partyHub");
 app.MapGet("/health", () => "API is alive");
 app.MapGet("/", context =>
 {

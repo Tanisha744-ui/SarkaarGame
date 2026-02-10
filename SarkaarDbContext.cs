@@ -21,6 +21,9 @@ public class SarkaarDbContext : DbContext
     public DbSet<ImposterRoundDecision> ImposterRoundDecisions { get; set; }
     public DbSet<ChatMessage> ChatMessages { get; set; }
 
+    public DbSet<Party> Parties { get; set; }
+    public DbSet<Player> Players { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -34,6 +37,21 @@ public class SarkaarDbContext : DbContext
             .HasOne(p => p.Game)
             .WithMany(g => g.Players)
             .HasForeignKey(p => p.GameId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Define primary key for Party
+        modelBuilder.Entity<Party>()
+            .HasKey(p => p.PartyId);
+
+        // Define primary key for Player
+        modelBuilder.Entity<Player>()
+            .HasKey(p => p.PlayerId);
+
+        // Define foreign key relationship between Player and Party
+        modelBuilder.Entity<Player>()
+            .HasOne(p => p.Party)
+            .WithMany(p => p.Players)
+            .HasForeignKey(p => p.PartyId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
